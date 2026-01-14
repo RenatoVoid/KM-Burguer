@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>GERENTE - KM BURGER</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #comanda-print, #comanda-print * { visibility: visible; }
+            #comanda-print { position: absolute; left: 0; top: 0; width: 80mm; font-size: 14px; color: black; font-family: 'Courier New', Courier, monospace; }
+        }
+    </style>
+</head>
+<body class="bg-zinc-900 text-white p-8">
+    <header class="flex justify-between items-center mb-8 bg-zinc-800 p-6 rounded-3xl border-b-4 border-red-600">
+        <div>
+            <h1 class="text-3xl font-black">KM BURGER CENTRAL</h1>
+            <p class="text-red-400 font-mono">AGUARDANDO PEDIDOS EM TEMPO REAL...</p>
+        </div>
+        <div class="bg-zinc-700 p-4 rounded-2xl text-center min-w-[200px]">
+            <span class="text-xs uppercase text-zinc-400">Faturamento Hoje</span>
+            <div id="faturamento" class="text-3xl font-black text-green-400 italic">R$ 0,00</div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-3 gap-8">
+        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[70vh]">
+            <h2 class="text-center font-bold text-orange-400 mb-4">🆕 NOVOS</h2>
+            <div id="coluna-novos" class="space-y-4"></div>
+        </div>
+        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[70vh]">
+            <h2 class="text-center font-bold text-blue-400 mb-4">🔥 NA CHAPA</h2>
+            <div id="coluna-chapa" class="space-y-4"></div>
+        </div>
+        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[70vh]">
+            <h2 class="text-center font-bold text-green-400 mb-4">✅ FINALIZADOS</h2>
+            <div id="coluna-fim" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <pre id="comanda-print" class="hidden"></pre>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4",
+            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com",
+            projectId: "km-burguer"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Monitorar pedidos
+        db.ref('pedidos').on('value', (snap) => {
+            const lista = snap.val();
+            render(lista);
+        });
+
+        function render(lista) {
+            const divs = { novos: '', preparando: '', finalizados: '' };
+            let totalVendas = 0;
+
+            for (let id in lista) {
+                const p = lista[id];
+                const card = `
+                    <div class="bg-zinc-700 p-4 rounded-2xl shadow-xl border-l-8 ${p.status === 'novos' ? 'border-orange-500' : p.status === 'preparando' ? 'border-blue-500' : 'border-green-500'}">
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>${p.cliente}</span>
+                            <span class="text-sm text-zinc-400">${p.hora}</span>
+                        </div>
+                        <p class="text-sm text-zinc-300 my-2">${p.itens}</p>
+                        <p class="text-xs text-zinc-500 uppercase">${p.endereco}</p>
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="font-black text-green-400 text-lg">R$ ${p.total.toFixed(2)}</span>
+                            <div class="flex gap-2">
+                                <button onclick="imprimir('${id}')" class="bg-zinc-600 p-2 rounded-lg text-xs">🖨️</button>
+                                ${p.status === 'novos' ? `<button onclick="update('${id}', 'preparando')" class="bg-blue-600 px-3 py-1 rounded-lg font-bold text-xs">PREPARAR</button>` : ''}
+                                ${p.status === 'preparando' ? `<button onclick="update('${id}', 'finalizados')" class="bg-green-600 px-3 py-1 rounded-lg font-bold text-xs">CONCLUIR</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                divs[p.status] += card;
+                if(p.status === 'finalizados') totalVendas += p.total;
+            }
+
+            document.getElementById('coluna-novos').innerHTML = divs.novos;
+            document.getElementById('coluna-chapa').innerHTML = divs.preparando;
+            document.getElementById('coluna-fim').innerHTML = divs.finalizados;
+            document.getElementById('faturamento').innerText = `R$ ${totalVendas.toFixed(2)}`;
+        }
+
+        function update(id, st) { db.ref('pedidos/'+id).update({status: st}); }
+
+        function imprimir(id) {
+            db.ref('pedidos/'+id).once('value', (s) => {
+                const p = s.val();
+                const texto = `\n  --- KM BURGER ---\n\nCLIENTE: ${p.cliente}\nHORA: ${p.hora}\nSTATUS: ${p.status.toUpperCase()}\n----------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------\nVALOR: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\nEND: ${p.endereco}\n\n\n\n`;
+                document.getElementById('comanda-print').innerText = texto;
+                window.print();
+            });
+        }
+    </script>
+</body>
+</html>
