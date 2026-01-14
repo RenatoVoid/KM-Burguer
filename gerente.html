@@ -2,102 +2,169 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>CENTRAL KM BURGER</title>
+    <title>CENTRAL KM BURGER - Gestão</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
+        /* VISUAL DA TELA (DARK MODE) */
+        body { background-color: #09090b; color: #f4f4f5; font-family: sans-serif; }
+        .coluna { min-height: 75vh; background-color: #18181b; border-radius: 20px; padding: 15px; border: 1px solid #27272a; }
+
+        /* CONFIGURAÇÃO PARA IMPRESSORA TÉRMICA 80mm */
         @media print {
-            body * { visibility: hidden; }
-            #comanda-print, #comanda-print * { visibility: visible; }
-            #comanda-print { position: absolute; left: 0; top: 0; width: 80mm; font-size: 14px; font-family: monospace; white-space: pre-wrap; color: black; }
+            @page { margin: 0; size: auto; }
+            body { background: white !important; color: black !important; margin: 0; padding: 0; }
+            header, .grid, button, footer, .no-print { display: none !important; } /* Esconde tudo */
+            
+            #comanda-print {
+                display: block !important;
+                visibility: visible !important;
+                width: 72mm; /* Ajuste para não cortar na bobina de 80mm */
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 13px;
+                color: black !important;
+                background: white !important;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                position: absolute;
+                left: 0;
+                top: 0;
+                padding: 10px;
+                line-height: 1.2;
+            }
         }
     </style>
 </head>
-<body class="bg-zinc-900 text-white p-6">
-    <header class="flex justify-between items-center mb-6 bg-zinc-800 p-6 rounded-3xl border-b-4 border-red-600">
-        <div><h1 class="text-3xl font-black italic">KM BURGER - GESTÃO</h1><p class="text-green-400 font-mono text-sm">SISTEMA ONLINE</p></div>
-        <div class="bg-zinc-700 p-4 rounded-2xl text-center"><span class="text-xs text-zinc-400 uppercase">Vendas Hoje</span><div id="faturamento" class="text-2xl font-black text-green-400">R$ 0,00</div></div>
+<body class="p-4 md:p-8">
+
+    <header class="flex flex-col md:flex-row justify-between items-center mb-8 bg-zinc-900 p-6 rounded-3xl border-b-4 border-red-700 shadow-2xl">
+        <div>
+            <h1 class="text-3xl font-black italic text-red-600 tracking-tighter">KM BURGER CENTRAL</h1>
+            <p class="text-zinc-500 font-mono text-xs uppercase tracking-widest">Painel de Controle em Tempo Real</p>
+        </div>
+        <div class="mt-4 md:mt-0 bg-zinc-800 p-4 rounded-2xl border border-zinc-700 text-center min-w-[220px]">
+            <span class="text-[10px] text-zinc-400 uppercase font-bold">Faturamento (Finalizados)</span>
+            <div id="faturamento" class="text-3xl font-black text-green-500 italic">R$ 0,00</div>
+        </div>
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[60vh]">
-            <h2 class="text-center font-bold text-orange-400 mb-4 uppercase">🆕 Novos Pedidos</h2>
-            <div id="coluna-novos" class="space-y-4"></div>
+        <div>
+            <h2 class="text-center font-bold text-orange-500 mb-4 flex items-center justify-center gap-2">
+                <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span></span>
+                NOVOS PEDIDOS
+            </h2>
+            <div id="coluna-novos" class="coluna space-y-4"></div>
         </div>
-        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[60vh]">
-            <h2 class="text-center font-bold text-blue-400 mb-4 uppercase">🔥 Na Chapa</h2>
-            <div id="coluna-preparando" class="space-y-4"></div>
+
+        <div>
+            <h2 class="text-center font-bold text-blue-500 mb-4 uppercase tracking-widest">🔥 Na Chapa</h2>
+            <div id="coluna-preparando" class="coluna space-y-4"></div>
         </div>
-        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[60vh]">
-            <h2 class="text-center font-bold text-green-400 mb-4 uppercase">✅ Finalizados</h2>
-            <div id="coluna-finalizados" class="space-y-4 opacity-70"></div>
+
+        <div>
+            <h2 class="text-center font-bold text-green-500 mb-4 uppercase tracking-widest">✅ Entregues</h2>
+            <div id="coluna-finalizados" class="coluna space-y-4 opacity-60"></div>
         </div>
     </div>
 
     <pre id="comanda-print" class="hidden"></pre>
 
     <script>
-        // TRAVA DE SEGURANÇA
-        const senha = prompt("Digite a senha de acesso:");
+        // SENHA DE ACESSO
+        const senha = prompt("KM BURGER - Digite a senha:");
         if(senha !== "km123") {
-            alert("Senha incorreta!");
-            document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:50px'>Acesso Negado</h1>";
+            document.body.innerHTML = "<div class='h-screen flex items-center justify-center bg-black text-red-600 font-bold'>ACESSO NEGADO</div>";
         }
 
+        // CONFIGURAÇÃO FIREBASE (SUAS CHAVES)
         const firebaseConfig = {
             apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4",
+            authDomain: "km-burguer.firebaseapp.com",
             projectId: "km-burguer",
-            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com"
+            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com",
+            storageBucket: "km-burguer.firebasestorage.app",
+            messagingSenderId: "426968901226",
+            appId: "1:426968901226:web:e05f587e2c36acaa714c13"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        db.ref('pedidos').on('value', (snap) => {
-            const data = snap.val();
-            renderizar(data);
+        // ESCUTAR BANCO DE DADOS
+        db.ref('pedidos').on('value', (snapshot) => {
+            const pedidos = snapshot.val();
+            renderizarPainel(pedidos);
         });
 
-        function renderizar(pedidos) {
-            const cols = { novos: '', preparando: '', finalizados: '' };
-            let totalDia = 0;
+        function renderizarPainel(pedidos) {
+            const html = { novos: '', preparando: '', finalizados: '' };
+            let totalVendas = 0;
 
             for (let id in pedidos) {
                 const p = pedidos[id];
-                const html = `
-                    <div class="bg-zinc-700 p-4 rounded-2xl border-l-8 ${p.status === 'novos' ? 'border-orange-500' : p.status === 'preparando' ? 'border-blue-500' : 'border-green-500'}">
-                        <div class="flex justify-between font-bold"><span>${p.cliente}</span><span class="text-xs opacity-50">${p.hora}</span></div>
-                        <p class="text-sm my-2 text-zinc-200">${p.itens}</p>
-                        <p class="text-[10px] text-zinc-400 mb-4">${p.endereco} | ${p.pagamento}</p>
+                const card = `
+                    <div class="bg-zinc-800 p-5 rounded-2xl border-l-8 ${p.status === 'novos' ? 'border-orange-500' : p.status === 'preparando' ? 'border-blue-500' : 'border-green-500'} shadow-lg">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-black text-lg text-white">${p.cliente.split(' ')[0]}</span>
+                            <span class="text-[10px] bg-zinc-700 px-2 py-1 rounded text-zinc-400 font-mono">${p.hora}</span>
+                        </div>
+                        <p class="text-sm text-zinc-300 leading-relaxed mb-3">${p.itens}</p>
+                        <div class="text-[10px] text-zinc-500 border-t border-zinc-700 pt-2 mb-4">
+                            <p>📍 ${p.endereco}</p>
+                            <p>💳 ${p.pagamento}</p>
+                        </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-green-400 font-bold">R$ ${p.total.toFixed(2)}</span>
+                            <span class="font-black text-green-500">R$ ${p.total.toFixed(2)}</span>
                             <div class="flex gap-2">
-                                <button onclick="imprimir('${id}')" class="bg-zinc-600 p-2 rounded text-xs">🖨️</button>
-                                ${p.status === 'novos' ? `<button onclick="update('${id}','preparando')" class="bg-blue-600 px-2 py-1 rounded text-xs font-bold">PREPARAR</button>` : ''}
-                                ${p.status === 'preparando' ? `<button onclick="update('${id}','finalizados')" class="bg-green-600 px-2 py-1 rounded text-xs font-bold">FIM</button>` : ''}
+                                <button onclick="imprimirPedido('${id}')" class="bg-zinc-600 hover:bg-zinc-500 p-2 rounded-xl transition">🖨️</button>
+                                ${p.status === 'novos' ? `<button onclick="atualizarStatus('${id}', 'preparando')" class="bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded-xl text-xs font-bold transition">PREPARAR</button>` : ''}
+                                ${p.status === 'preparando' ? `<button onclick="atualizarStatus('${id}', 'finalizados')" class="bg-green-600 hover:bg-green-500 px-3 py-2 rounded-xl text-xs font-bold transition">FINALIZAR</button>` : ''}
                             </div>
                         </div>
-                    </div>`;
-                cols[p.status] += html;
-                if(p.status === 'finalizados') totalDia += p.total;
+                    </div>
+                `;
+                html[p.status] += card;
+                if(p.status === 'finalizados') totalVendas += p.total;
             }
 
-            document.getElementById('coluna-novos').innerHTML = cols.novos;
-            document.getElementById('coluna-preparando').innerHTML = cols.preparando;
-            document.getElementById('coluna-finalizados').innerHTML = cols.finalizados;
-            document.getElementById('faturamento').innerText = `R$ ${totalDia.toFixed(2)}`;
+            document.getElementById('coluna-novos').innerHTML = html.novos || '<p class="text-center text-zinc-600 text-xs mt-10">Nenhum pedido novo</p>';
+            document.getElementById('coluna-preparando').innerHTML = html.preparando;
+            document.getElementById('coluna-finalizados').innerHTML = html.finalizados;
+            document.getElementById('faturamento').innerText = `R$ ${totalVendas.toFixed(2)}`;
         }
 
-        function update(id, st) { db.ref('pedidos/'+id).update({status: st}); }
+        function atualizarStatus(id, novoStatus) {
+            db.ref('pedidos/' + id).update({ status: novoStatus });
+        }
 
-        function imprimir(id) {
-            db.ref('pedidos/'+id).once('value', (s) => {
+        function imprimirPedido(id) {
+            db.ref('pedidos/' + id).once('value', (s) => {
                 const p = s.val();
-                const texto = `\nKM BURGER\n----------------------\nCLIENTE: ${p.cliente}\nHORA: ${p.hora}\n----------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------\nTOTAL: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\nEND: ${p.endereco}\n\n\n\n`;
-                document.getElementById('comanda-print').innerText = texto;
-                window.print();
+                const conteudo = `
+      KM BURGER 🍔
+----------------------------
+PEDIDO: #${id.slice(-4)}
+HORA: ${p.hora}
+CLIENTE: ${p.cliente.toUpperCase()}
+----------------------------
+ITENS:
+${p.itens.split(', ').join('\n')}
+
+----------------------------
+TOTAL: R$ ${p.total.toFixed(2)}
+PAGTO: ${p.pagamento.toUpperCase()}
+END: ${p.endereco.toUpperCase()}
+----------------------------
+\n\n\n.`;
+                const areaPrint = document.getElementById('comanda-print');
+                areaPrint.innerText = conteudo;
+                
+                setTimeout(() => {
+                    window.print();
+                }, 250);
             });
         }
     </script>
 </body>
-</html> 
+</html>
