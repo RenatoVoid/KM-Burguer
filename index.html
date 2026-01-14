@@ -3,59 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KM BURGER - Pedir Agora</title>
+    <title>KM BURGER - Oficial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         .bg-km-vinho { background-color: #4a0404; }
         .text-km-amarelo { color: #f59e0b; }
+        .modal-scroll { max-height: 60vh; overflow-y: auto; }
     </style>
 </head>
-<body class="bg-gray-100 pb-32">
-    <header class="bg-km-vinho p-6 text-center text-white shadow-xl">
+<body class="bg-gray-100 font-sans pb-32">
+
+    <header class="bg-km-vinho p-6 text-center text-white shadow-xl sticky top-0 z-50">
         <h1 class="text-3xl font-black italic text-km-amarelo">KM BURGER 🍔</h1>
-        <p id="status-loja" class="text-xs font-bold mt-2"></p>
+        <p id="status-loja" class="text-xs font-bold mt-1 text-green-400">● ABERTO AGORA</p>
     </header>
 
-    <main id="menu" class="max-w-md mx-auto p-4 space-y-8">
-        </main>
+    <main class="max-w-md mx-auto p-4 space-y-8">
+        <div id="categorias-container" class="space-y-8"></div>
+
+        <section class="bg-purple-900 p-5 rounded-3xl shadow-lg text-white">
+            <h2 class="font-bold text-xl mb-4 text-center">MONTE SEU AÇAÍ 🍧</h2>
+            <div id="acai-sizes" class="grid grid-cols-2 gap-3"></div>
+        </section>
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-2xl max-w-md mx-auto z-40">
+        <div class="flex justify-between items-center mb-2 px-2 font-bold">
+            <span class="text-gray-500">Total:</span>
+            <span id="carrinho-total" class="text-2xl text-green-600">R$ 0,00</span>
+        </div>
+        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg text-lg active:scale-95 transition">FINALIZAR PEDIDO</button>
+    </div>
 
     <div id="modal-acai" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl w-full max-w-sm p-6 overflow-hidden flex flex-col max-h-[90vh]">
-            <h2 id="acai-titulo" class="text-xl font-bold text-purple-900"></h2>
-            <div id="lista-adicionais" class="overflow-y-auto space-y-2 mt-4 pr-2"></div>
-            <button onclick="confirmarAcai()" class="w-full bg-purple-600 text-white py-4 rounded-xl font-bold mt-4 shadow-lg">ADICIONAR</button>
-            <button onclick="document.getElementById('modal-acai').classList.add('hidden')" class="w-full text-gray-400 mt-2">Voltar</button>
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6">
+            <h2 id="acai-titulo" class="text-xl font-bold text-purple-900 mb-1"></h2>
+            <p class="text-sm text-gray-500 mb-4 italic">Selecione os adicionais:</p>
+            <div id="lista-adicionais" class="modal-scroll space-y-2 pr-2"></div>
+            <div class="border-t pt-4 mt-4 font-bold">
+                <div class="flex justify-between text-lg mb-4 text-purple-900">
+                    <span>Subtotal:</span>
+                    <span id="acai-subtotal">R$ 0,00</span>
+                </div>
+                <button onclick="confirmarAcai()" class="w-full bg-purple-600 text-white py-4 rounded-2xl">ADICIONAR</button>
+            </div>
         </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-2xl max-w-md mx-auto z-40 text-center">
-        <span class="block text-gray-500 text-sm mb-1">Total: <b id="carrinho-total" class="text-green-600 text-lg">R$ 0,00</b></span>
-        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg">FINALIZAR PEDIDO</button>
-    </div>
-
     <div id="modal-checkout" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-            <h2 class="text-xl font-bold mb-4 text-km-vinho">Dados da Entrega</h2>
-            <input type="text" id="nome" placeholder="Seu Nome" class="w-full p-4 border rounded-xl mb-3 outline-none">
-            <select id="tipo-entrega" onchange="toggleEndereco()" class="w-full p-4 border rounded-xl mb-3">
-                <option value="entrega">Entrega (Delivery)</option>
-                <option value="retirada">Retirada na Loja</option>
-            </select>
-            <input type="text" id="endereco" placeholder="Endereço, Número e Bairro" class="w-full p-4 border rounded-xl mb-3">
-            <input type="text" id="pagamento" placeholder="Forma de Pagamento" class="w-full p-4 border rounded-xl mb-4">
-            <button onclick="enviarPedidoFirebase()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-bold shadow-xl">ENVIAR PEDIDO</button>
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+            <h2 class="text-xl font-bold mb-4 text-km-vinho">Finalizar Pedido</h2>
+            <div class="space-y-3">
+                <input type="text" id="nome" placeholder="Seu Nome" class="w-full p-4 border rounded-xl outline-none focus:border-km-vinho">
+                <select id="tipo-entrega" onchange="toggleEndereco()" class="w-full p-4 border rounded-xl outline-none">
+                    <option value="entrega">Entrega (Delivery)</option>
+                    <option value="retirada">Retirada na Loja</option>
+                </select>
+                <input type="text" id="endereco" placeholder="Endereço, Número e Bairro" class="w-full p-4 border rounded-xl outline-none">
+                <input type="text" id="pagamento" placeholder="Forma de Pagamento (Pix, Dinheiro, Cartão)" class="w-full p-4 border rounded-xl outline-none">
+            </div>
+            <button onclick="enviarPedidoFirebase()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-bold text-lg mt-6 shadow-xl active:scale-95 transition">ENVIAR PEDIDO</button>
+            <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="w-full mt-4 text-gray-400 font-semibold">Voltar</button>
         </div>
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO SEU FIREBASE
+        // CONFIGURAÇÃO DO SEU FIREBASE (AIzaSyC...)
         const firebaseConfig = {
             apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4",
             authDomain: "km-burguer.firebaseapp.com",
             projectId: "km-burguer",
-            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com",
+            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com", // Adicionado conforme padrão Firebase
             storageBucket: "km-burguer.firebasestorage.app",
             messagingSenderId: "426968901226",
             appId: "1:426968901226:web:e05f587e2c36acaa714c13"
@@ -63,37 +83,153 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // [O RESTANTE DO CÓDIGO DO CARDÁPIO QUE CRIAMOS ANTES VEM AQUI...]
-        // (Vou resumir a lógica de envio para você ver o que muda)
+        // ITENS EXTRAÍDOS DO SEU CARDÁPIO (FOTOS)
+        const cardapio = [
+            { id: 1, nome: "X-Burguer", preco: 19.90, cat: '🍔 HAMBÚRGUER' },
+            { id: 2, nome: "X-Salada", preco: 22.90, cat: '🍔 HAMBÚRGUER' },
+            { id: 3, nome: "X-Bacon", preco: 27.90, cat: '🍔 HAMBÚRGUER' },
+            { id: 4, nome: "X-Calabresa", preco: 24.90, cat: '🍔 HAMBÚRGUER' },
+            { id: 5, nome: "X-Egg", preco: 24.90, cat: '🍔 HAMBÚRGUER' },
+            { id: 6, nome: "X-Frango", preco: 24.90, cat: '🍔 HAMBÚRGUER' },
+            { id: 7, nome: "X-Tudo", preco: 39.90, cat: '🍔 HAMBÚRGUER' },
+            { id: 8, nome: "KM-Burger Simples", preco: 29.90, cat: '🔥 ARTESANAL' },
+            { id: 9, nome: "KM-Burger Salada", preco: 33.90, cat: '🔥 ARTESANAL' },
+            { id: 10, nome: "KM-Burger Bacon", preco: 37.90, cat: '🔥 ARTESANAL' },
+            { id: 11, nome: "KM-Burger Calabresa", preco: 35.90, cat: '🔥 ARTESANAL' },
+            { id: 12, nome: "KM-Burger MAX", preco: 49.90, cat: '🔥 ARTESANAL' },
+            { id: 13, nome: "KM-Burger Egg", preco: 35.90, cat: '🔥 ARTESANAL' },
+            { id: 14, nome: "KM-Chicken", preco: 29.90, cat: '🔥 ARTESANAL' },
+            { id: 15, nome: "Batata P", preco: 16.90, cat: '🍟 PORÇÕES' },
+            { id: 16, nome: "Batata G", preco: 26.90, cat: '🍟 PORÇÕES' },
+            { id: 17, nome: "Batata Queijo/Bacon G", preco: 43.90, cat: '🍟 PORÇÕES' },
+            { id: 18, nome: "Calabresa c/ Fritas", preco: 39.90, cat: '🍟 PORÇÕES' },
+            { id: 19, nome: "Contra Filé Grelhado", preco: 59.90, cat: '🍟 PORÇÕES' },
+            { id: 20, nome: "Chapa Mix", preco: 159.90, cat: '🍟 PORÇÕES' },
+            { id: 21, nome: "Frango Empanado", preco: 49.90, cat: '🍟 PORÇÕES' },
+            { id: 22, nome: "Pastel Carne", preco: 12.90, cat: '🥟 PASTÉIS' },
+            { id: 23, nome: "Pastel Queijo", preco: 12.90, cat: '🥟 PASTÉIS' },
+            { id: 24, nome: "Pastel Pizza", preco: 12.90, cat: '🥟 PASTÉIS' },
+            { id: 25, nome: "Pastel Bauru", preco: 12.90, cat: '🥟 PASTÉIS' },
+            { id: 26, nome: "Pastel Nutella", preco: 15.90, cat: '🥟 PASTÉIS' },
+            { id: 27, nome: "Refrigerante Lata", preco: 7.90, cat: '🥤 BEBIDAS' },
+            { id: 28, nome: "Suco Dell Vale Lata", preco: 7.90, cat: '🥤 BEBIDAS' },
+            { id: 29, nome: "Água", preco: 3.90, cat: '🥤 BEBIDAS' }
+        ];
+
+        const acaiBase = [
+            { n: "Copo 300ml", p: 10.90 }, { n: "Copo 400ml", p: 13.90 }, 
+            { n: "Copo 500ml", p: 20.90 }, { n: "Tigela 500ml", p: 28.90 }
+        ];
+
+        const acaiExtras = [
+            { n: "Banana", p: 1.00 }, { n: "Morango", p: 3.00 }, { n: "Nutella", p: 6.00 },
+            { n: "Leite em pó", p: 1.00 }, { n: "Leite condensado", p: 1.00 }, { n: "Paçoca", p: 2.00 }
+        ];
 
         let carrinho = [];
         let totalGeral = 0;
+        let acaiAtual = null;
+
+        function renderMenu() {
+            const container = document.getElementById('categorias-container');
+            const cats = [...new Set(cardapio.map(i => i.cat))];
+            container.innerHTML = cats.map(cat => `
+                <section>
+                    <h2 class="font-black text-lg text-km-vinho mb-3 border-l-4 border-km-vinho pl-2">${cat}</h2>
+                    <div class="grid gap-3">
+                        ${cardapio.filter(i => i.cat === cat).map(item => `
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+                                <div><p class="font-bold text-gray-800">${item.nome}</p><p class="text-green-600 font-black">R$ ${item.preco.toFixed(2)}</p></div>
+                                <button onclick="addCarrinho('${item.nome}', ${item.preco})" class="bg-km-vinho text-white w-10 h-10 rounded-full font-bold shadow-lg active:scale-95">+</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </section>
+            `).join('');
+
+            document.getElementById('acai-sizes').innerHTML = acaiBase.map(s => `
+                <button onclick="abrirModalAcai('${s.n}', ${s.p})" class="p-4 bg-white/10 border border-white/20 rounded-2xl text-center active:scale-95 transition">
+                    <p class="text-sm font-bold">${s.n}</p>
+                    <p class="text-km-amarelo font-black">R$ ${s.p.toFixed(2)}</p>
+                </button>
+            `).join('');
+        }
+
+        function abrirModalAcai(nome, preco) {
+            acaiAtual = { nomeBase: nome, precoBase: preco, adicionais: [], total: preco };
+            document.getElementById('acai-titulo').innerText = nome;
+            renderAdicionaisAcai();
+            atualizarSubtotalAcai();
+            document.getElementById('modal-acai').classList.remove('hidden');
+        }
+
+        function renderAdicionaisAcai() {
+            document.getElementById('lista-adicionais').innerHTML = acaiExtras.map(ex => `
+                <label class="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100 cursor-pointer">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" onchange="toggleExtraAcai('${ex.n}', ${ex.p})" class="w-5 h-5 accent-purple-600">
+                        <span class="font-medium">${ex.n}</span>
+                    </div>
+                    <span class="text-purple-600 font-bold">+ R$ ${ex.p.toFixed(2)}</span>
+                </label>
+            `).join('');
+        }
+
+        function toggleExtraAcai(nome, preco) {
+            const index = acaiAtual.adicionais.indexOf(nome);
+            if(index > -1) { acaiAtual.adicionais.splice(index, 1); acaiAtual.total -= preco; }
+            else { acaiAtual.adicionais.push(nome); acaiAtual.total += preco; }
+            atualizarSubtotalAcai();
+        }
+
+        function atualizarSubtotalAcai() { document.getElementById('acai-subtotal').innerText = `R$ ${acaiAtual.total.toFixed(2)}`; }
+
+        function confirmarAcai() {
+            const final = acaiAtual.nomeBase + (acaiAtual.adicionais.length > 0 ? " (" + acaiAtual.adicionais.join(", ") + ")" : "");
+            addCarrinho(final, acaiAtual.total);
+            document.getElementById('modal-acai').classList.add('hidden');
+        }
+
+        function addCarrinho(n, p) {
+            carrinho.push({n, p});
+            totalGeral += p;
+            document.getElementById('carrinho-total').innerText = `R$ ${totalGeral.toFixed(2)}`;
+        }
+
+        function toggleEndereco() {
+            const t = document.getElementById('tipo-entrega').value;
+            document.getElementById('endereco').classList.toggle('hidden', t === 'retirada');
+        }
+
+        function abrirCheckout() {
+            if(carrinho.length === 0) return alert("Adicione itens!");
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        }
 
         function enviarPedidoFirebase() {
             const nome = document.getElementById('nome').value;
             const end = document.getElementById('endereco').value;
-            const tipo = document.getElementById('tipo-entrega').value;
             const pag = document.getElementById('pagamento').value;
+            const tipo = document.getElementById('tipo-entrega').value;
 
-            if(!nome) return alert("Digite seu nome!");
+            if(!nome) return alert("Nome obrigatório!");
 
             const pedidoRef = db.ref('pedidos').push();
-            const itensTxt = carrinho.map(i => i.n).join(', ');
-
             pedidoRef.set({
                 cliente: nome,
-                endereco: tipo === 'entrega' ? end : 'RETIRADA',
-                itens: itensTxt,
+                endereco: tipo === 'entrega' ? end : 'RETIRADA NA LOJA',
+                itens: carrinho.map(i => i.n).join(', '),
                 total: totalGeral,
                 pagamento: pag,
                 status: 'novos',
                 hora: new Date().toLocaleTimeString('pt-BR')
             }).then(() => {
-                alert("Pedido enviado com sucesso!");
+                alert("Pedido Enviado!");
                 window.location.reload();
             });
         }
-        // [Renderizar menu, acai, etc...]
+
+        renderMenu();
     </script>
 </body>
 </html>
