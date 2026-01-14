@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>GERENTE - KM BURGER</title>
+    <title>CENTRAL KM BURGER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -10,86 +10,82 @@
         @media print {
             body * { visibility: hidden; }
             #comanda-print, #comanda-print * { visibility: visible; }
-            #comanda-print { position: absolute; left: 0; top: 0; width: 80mm; font-size: 14px; color: black; font-family: 'Courier New', Courier, monospace; }
+            #comanda-print { position: absolute; left: 0; top: 0; width: 80mm; font-size: 14px; font-family: monospace; white-space: pre-wrap; color: black; }
         }
     </style>
 </head>
-<body class="bg-zinc-900 text-white p-8">
-    <header class="flex justify-between items-center mb-8 bg-zinc-800 p-6 rounded-3xl border-b-4 border-red-600">
-        <div>
-            <h1 class="text-3xl font-black">KM BURGER CENTRAL</h1>
-            <p class="text-red-400 font-mono">AGUARDANDO PEDIDOS EM TEMPO REAL...</p>
-        </div>
-        <div class="bg-zinc-700 p-4 rounded-2xl text-center min-w-[200px]">
-            <span class="text-xs uppercase text-zinc-400">Faturamento Hoje</span>
-            <div id="faturamento" class="text-3xl font-black text-green-400 italic">R$ 0,00</div>
-        </div>
+<body class="bg-zinc-900 text-white p-6">
+    <header class="flex justify-between items-center mb-6 bg-zinc-800 p-6 rounded-3xl border-b-4 border-red-600">
+        <div><h1 class="text-3xl font-black italic">KM BURGER - GESTÃO</h1><p class="text-green-400 font-mono text-sm">SISTEMA ONLINE</p></div>
+        <div class="bg-zinc-700 p-4 rounded-2xl text-center"><span class="text-xs text-zinc-400 uppercase">Vendas Hoje</span><div id="faturamento" class="text-2xl font-black text-green-400">R$ 0,00</div></div>
     </header>
 
-    <div class="grid grid-cols-3 gap-8">
-        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[70vh]">
-            <h2 class="text-center font-bold text-orange-400 mb-4">🆕 NOVOS</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[60vh]">
+            <h2 class="text-center font-bold text-orange-400 mb-4 uppercase">🆕 Novos Pedidos</h2>
             <div id="coluna-novos" class="space-y-4"></div>
         </div>
-        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[70vh]">
-            <h2 class="text-center font-bold text-blue-400 mb-4">🔥 NA CHAPA</h2>
-            <div id="coluna-chapa" class="space-y-4"></div>
+        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[60vh]">
+            <h2 class="text-center font-bold text-blue-400 mb-4 uppercase">🔥 Na Chapa</h2>
+            <div id="coluna-preparando" class="space-y-4"></div>
         </div>
-        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[70vh]">
-            <h2 class="text-center font-bold text-green-400 mb-4">✅ FINALIZADOS</h2>
-            <div id="coluna-fim" class="space-y-4"></div>
+        <div class="bg-zinc-800 p-4 rounded-3xl min-h-[60vh]">
+            <h2 class="text-center font-bold text-green-400 mb-4 uppercase">✅ Finalizados</h2>
+            <div id="coluna-finalizados" class="space-y-4 opacity-70"></div>
         </div>
     </div>
 
     <pre id="comanda-print" class="hidden"></pre>
 
     <script>
+        // TRAVA DE SEGURANÇA
+        const senha = prompt("Digite a senha de acesso:");
+        if(senha !== "km123") {
+            alert("Senha incorreta!");
+            document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:50px'>Acesso Negado</h1>";
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4",
-            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com",
-            projectId: "km-burguer"
+            projectId: "km-burguer",
+            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Monitorar pedidos
         db.ref('pedidos').on('value', (snap) => {
-            const lista = snap.val();
-            render(lista);
+            const data = snap.val();
+            renderizar(data);
         });
 
-        function render(lista) {
-            const divs = { novos: '', preparando: '', finalizados: '' };
-            let totalVendas = 0;
+        function renderizar(pedidos) {
+            const cols = { novos: '', preparando: '', finalizados: '' };
+            let totalDia = 0;
 
-            for (let id in lista) {
-                const p = lista[id];
-                const card = `
-                    <div class="bg-zinc-700 p-4 rounded-2xl shadow-xl border-l-8 ${p.status === 'novos' ? 'border-orange-500' : p.status === 'preparando' ? 'border-blue-500' : 'border-green-500'}">
-                        <div class="flex justify-between font-bold text-lg">
-                            <span>${p.cliente}</span>
-                            <span class="text-sm text-zinc-400">${p.hora}</span>
-                        </div>
-                        <p class="text-sm text-zinc-300 my-2">${p.itens}</p>
-                        <p class="text-xs text-zinc-500 uppercase">${p.endereco}</p>
-                        <div class="flex justify-between items-center mt-4">
-                            <span class="font-black text-green-400 text-lg">R$ ${p.total.toFixed(2)}</span>
+            for (let id in pedidos) {
+                const p = pedidos[id];
+                const html = `
+                    <div class="bg-zinc-700 p-4 rounded-2xl border-l-8 ${p.status === 'novos' ? 'border-orange-500' : p.status === 'preparando' ? 'border-blue-500' : 'border-green-500'}">
+                        <div class="flex justify-between font-bold"><span>${p.cliente}</span><span class="text-xs opacity-50">${p.hora}</span></div>
+                        <p class="text-sm my-2 text-zinc-200">${p.itens}</p>
+                        <p class="text-[10px] text-zinc-400 mb-4">${p.endereco} | ${p.pagamento}</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-green-400 font-bold">R$ ${p.total.toFixed(2)}</span>
                             <div class="flex gap-2">
-                                <button onclick="imprimir('${id}')" class="bg-zinc-600 p-2 rounded-lg text-xs">🖨️</button>
-                                ${p.status === 'novos' ? `<button onclick="update('${id}', 'preparando')" class="bg-blue-600 px-3 py-1 rounded-lg font-bold text-xs">PREPARAR</button>` : ''}
-                                ${p.status === 'preparando' ? `<button onclick="update('${id}', 'finalizados')" class="bg-green-600 px-3 py-1 rounded-lg font-bold text-xs">CONCLUIR</button>` : ''}
+                                <button onclick="imprimir('${id}')" class="bg-zinc-600 p-2 rounded text-xs">🖨️</button>
+                                ${p.status === 'novos' ? `<button onclick="update('${id}','preparando')" class="bg-blue-600 px-2 py-1 rounded text-xs font-bold">PREPARAR</button>` : ''}
+                                ${p.status === 'preparando' ? `<button onclick="update('${id}','finalizados')" class="bg-green-600 px-2 py-1 rounded text-xs font-bold">FIM</button>` : ''}
                             </div>
                         </div>
-                    </div>
-                `;
-                divs[p.status] += card;
-                if(p.status === 'finalizados') totalVendas += p.total;
+                    </div>`;
+                cols[p.status] += html;
+                if(p.status === 'finalizados') totalDia += p.total;
             }
 
-            document.getElementById('coluna-novos').innerHTML = divs.novos;
-            document.getElementById('coluna-chapa').innerHTML = divs.preparando;
-            document.getElementById('coluna-fim').innerHTML = divs.finalizados;
-            document.getElementById('faturamento').innerText = `R$ ${totalVendas.toFixed(2)}`;
+            document.getElementById('coluna-novos').innerHTML = cols.novos;
+            document.getElementById('coluna-preparando').innerHTML = cols.preparando;
+            document.getElementById('coluna-finalizados').innerHTML = cols.finalizados;
+            document.getElementById('faturamento').innerText = `R$ ${totalDia.toFixed(2)}`;
         }
 
         function update(id, st) { db.ref('pedidos/'+id).update({status: st}); }
@@ -97,11 +93,11 @@
         function imprimir(id) {
             db.ref('pedidos/'+id).once('value', (s) => {
                 const p = s.val();
-                const texto = `\n  --- KM BURGER ---\n\nCLIENTE: ${p.cliente}\nHORA: ${p.hora}\nSTATUS: ${p.status.toUpperCase()}\n----------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------\nVALOR: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\nEND: ${p.endereco}\n\n\n\n`;
+                const texto = `\nKM BURGER\n----------------------\nCLIENTE: ${p.cliente}\nHORA: ${p.hora}\n----------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------\nTOTAL: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\nEND: ${p.endereco}\n\n\n\n`;
                 document.getElementById('comanda-print').innerText = texto;
                 window.print();
             });
         }
     </script>
 </body>
-</html>
+</html> 
