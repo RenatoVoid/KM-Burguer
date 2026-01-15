@@ -7,11 +7,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #121212; color: #f3f4f6; }
         .scroll-hide::-webkit-scrollbar { display: none; }
@@ -22,46 +20,49 @@
         .text-gold { color: #fbbf24; }
     </style>
 </head>
-<body class="pb-32 selection:bg-red-500 selection:text-white">
+<body class="pb-32">
+
+    <div id="aviso-fechado" class="hidden fixed inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center text-center p-6 backdrop-blur-md">
+        <div class="bg-red-600/20 p-6 rounded-full mb-4 animate-pulse">
+            <span class="text-6xl">🔒</span>
+        </div>
+        <h2 class="text-3xl font-black text-white mb-2">LOJA FECHADA</h2>
+        <p class="text-gray-400 max-w-xs">Nosso delivery não está aceitando pedidos no momento. Volte em breve!</p>
+    </div>
 
     <header class="glass-header fixed top-0 w-full z-50 shadow-lg">
         <div class="max-w-md mx-auto px-5 py-4 flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-black italic tracking-tighter text-white">KM<span class="text-red-600">BURGER</span></h1>
-                <p class="text-[10px] text-gray-400 font-semibold tracking-widest uppercase">O Sabor Autêntico</p>
-            </div>
-            <div class="flex items-center gap-2">
+            <div><h1 class="text-2xl font-black italic tracking-tighter text-white">KM<span class="text-red-600">BURGER</span></h1></div>
+            <div id="badge-status" class="flex items-center gap-2">
                 <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span class="text-xs font-bold text-green-500">Aberto</span>
             </div>
         </div>
-
         <nav class="max-w-md mx-auto flex gap-4 overflow-x-auto px-5 pb-3 scroll-hide">
-            <a href="#tradicionais" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700 active:bg-red-600 active:text-white transition">🍔 Tradicionais</a>
-            <a href="#artesanais" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700 active:bg-red-600 active:text-white transition">🔥 Artesanais</a>
-            <a href="#porcoes" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700 active:bg-red-600 active:text-white transition">🍟 Porções</a>
-            <a href="#pasteis" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700 active:bg-red-600 active:text-white transition">🥟 Pastéis</a>
-            <a href="#acai" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700 active:bg-red-600 active:text-white transition">🍧 Açaí</a>
-            <a href="#bebidas" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700 active:bg-red-600 active:text-white transition">🥤 Bebidas</a>
+            <a href="#tradicionais" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700">🍔 Tradicionais</a>
+            <a href="#artesanais" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700">🔥 Artesanais</a>
+            <a href="#porcoes" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700">🍟 Porções</a>
+            <a href="#pasteis" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700">🥟 Pastéis</a>
+            <a href="#acai" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700">🍧 Açaí</a>
+            <a href="#bebidas" class="whitespace-nowrap px-4 py-2 rounded-full bg-[#2d2d35] text-xs font-bold text-gray-300 border border-gray-700">🥤 Bebidas</a>
         </nav>
     </header>
 
     <div class="h-36"></div>
-
     <main id="menu-container" class="max-w-md mx-auto px-4 space-y-8"></main>
 
     <div class="fixed bottom-6 left-4 right-4 z-40 max-w-md mx-auto">
         <button onclick="abrirCheckout()" class="w-full bg-white text-gray-900 p-1 rounded-2xl shadow-2xl flex items-center justify-between pr-6 pl-1 active:scale-95 transition-all">
             <div class="bg-red-600 text-white w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shadow-lg" id="cart-count">0</div>
             <div class="flex flex-col items-end">
-                <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total do Pedido</span>
+                <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Ver Carrinho</span>
                 <span id="cart-total" class="text-xl font-black text-gray-900">R$ 0,00</span>
             </div>
         </button>
     </div>
 
     <div id="modal-checkout" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-[#1e1e24] w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl">
+        <div class="bg-[#1e1e24] w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-black text-white">FINALIZAR</h2>
                 <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="text-gray-500 hover:text-white">✕</button>
@@ -70,279 +71,219 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Seu Nome</label>
-                    <input type="text" id="nome" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white focus:border-red-500 outline-none transition" placeholder="Ex: João Silva">
+                    <input type="text" id="nome" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none" placeholder="Nome completo">
                 </div>
                 
                 <div>
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Entrega</label>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo de Entrega</label>
                     <select id="tipo-entrega" onchange="toggleEndereco()" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none">
                         <option value="entrega">🛵 Entrega (Delivery)</option>
                         <option value="retirada">🏪 Retirada no Balcão</option>
                     </select>
                 </div>
 
-                <div id="campo-endereco">
-                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Endereço Completo</label>
-                    <textarea id="endereco" rows="2" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white focus:border-red-500 outline-none transition" placeholder="Rua, Número, Bairro..."></textarea>
+                <div id="area-delivery" class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Selecione o Bairro</label>
+                        <select id="bairro-select" onchange="calcularTotalComTaxa()" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none">
+                            </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Rua e Número</label>
+                        <input type="text" id="rua-numero" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none" placeholder="Ex: Rua A, 123">
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Pagamento</label>
                     <select id="pagamento" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none">
                         <option value="Pix">💠 PIX</option>
-                        <option value="Cartão">💳 Cartão de Crédito/Débito</option>
+                        <option value="Cartão">💳 Cartão</option>
                         <option value="Dinheiro">💵 Dinheiro</option>
                     </select>
                 </div>
 
-                <div class="pt-4">
-                    <button onclick="enviarPedido()" class="w-full btn-add text-white font-bold py-4 rounded-xl shadow-lg shadow-red-900/50 uppercase tracking-widest active:scale-95 transition">
-                        Confirmar Pedido
-                    </button>
+                <div class="bg-[#121212] p-4 rounded-xl border border-gray-800 space-y-2">
+                    <div class="flex justify-between text-sm text-gray-400"><span>Subtotal:</span><span id="resumo-subtotal">R$ 0,00</span></div>
+                    <div class="flex justify-between text-sm text-gray-400" id="linha-taxa"><span>Taxa de Entrega:</span><span id="resumo-taxa">R$ 0,00</span></div>
+                    <div class="flex justify-between text-lg font-black text-white pt-2 border-t border-gray-800"><span>TOTAL:</span><span id="resumo-total" class="text-green-500">R$ 0,00</span></div>
                 </div>
+
+                <button onclick="enviarPedido()" class="w-full btn-add text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-widest active:scale-95 transition">Confirmar Pedido</button>
             </div>
         </div>
     </div>
 
     <div id="modal-acai" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-[#1e1e24] w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl h-[80vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <h2 id="acai-titulo" class="text-xl font-black text-purple-400">Monte seu Açaí</h2>
-                <button onclick="fecharModalAcai()" class="text-gray-500 hover:text-white">✕</button>
-            </div>
-            
-            <p class="text-xs text-gray-400 mb-4">Escolha os adicionais:</p>
-            
-            <div id="lista-adicionais" class="flex-1 overflow-y-auto space-y-2 pr-2 scroll-hide">
-                </div>
-
+        <div class="bg-[#1e1e24] w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl">
+            <h2 id="acai-titulo" class="text-xl font-black text-purple-400 mb-4">Monte seu Açaí</h2>
+            <div id="lista-adicionais" class="space-y-2 max-h-60 overflow-y-auto pr-2 scroll-hide"></div>
             <div class="mt-4 pt-4 border-t border-gray-700">
-                <div class="flex justify-between items-center mb-4 text-lg font-bold">
-                    <span>Total:</span>
-                    <span id="acai-total-modal" class="text-green-500">R$ 0,00</span>
-                </div>
-                <button onclick="confirmarAcai()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition">
-                    ADICIONAR AO PEDIDO
-                </button>
+                <div class="flex justify-between mb-4 text-lg font-bold"><span>Total:</span><span id="acai-total-modal" class="text-green-500">R$ 0,00</span></div>
+                <button onclick="confirmarAcai()" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl">ADICIONAR</button>
+                <button onclick="document.getElementById('modal-acai').classList.add('hidden')" class="w-full mt-2 text-gray-500 text-xs">Cancelar</button>
             </div>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4",
-            databaseURL: "https://km-burguer-default-rtdb.firebaseio.com",
-            projectId: "km-burguer"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4", databaseURL: "https://km-burguer-default-rtdb.firebaseio.com", projectId: "km-burguer" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // CARDÁPIO COMPLETO BASEADO NAS FOTOS
+        // --- CONFIGURAÇÃO DE BAIRROS (EDITE AQUI RENATO!) ---
+        const listaBairros = [
+            { nome: "Centro", taxa: 0.00 },
+            { nome: "Vila Nova", taxa: 5.00 },
+            { nome: "Jardim das Flores", taxa: 7.00 },
+            { nome: "Parque Industrial", taxa: 10.00 },
+            { nome: "Zona Rural", taxa: 15.00 }
+        ];
+
         const cardapio = [
             // Tradicionais
-            { id: 't1', n: "X-Burguer", p: 19.90, c: "tradicionais", d: "Pão, carne, queijo e maionese." },
-            { id: 't2', n: "X-Salada", p: 22.90, c: "tradicionais", d: "Pão, carne, queijo, salada e maionese." },
-            { id: 't3', n: "X-Bacon", p: 27.90, c: "tradicionais", d: "O clássico com muito bacon crocante." },
-            { id: 't4', n: "X-Calabresa", p: 24.90, c: "tradicionais", d: "Calabresa fatiada acebolada." },
-            { id: 't5', n: "X-Egg", p: 24.90, c: "tradicionais", d: "Com ovo frito na chapa." },
-            { id: 't6', n: "X-Frango", p: 24.90, c: "tradicionais", d: "Filé de frango grelhado." },
-            { id: 't7', n: "X-Tudo", p: 39.90, c: "tradicionais", d: "Tudo o que tem direito!" },
-            
+            { id: 't1', n: "X-Burguer", p: 19.90, c: "tradicionais" }, { id: 't2', n: "X-Salada", p: 22.90, c: "tradicionais" },
+            { id: 't3', n: "X-Bacon", p: 27.90, c: "tradicionais" }, { id: 't4', n: "X-Calabresa", p: 24.90, c: "tradicionais" },
+            { id: 't5', n: "X-Egg", p: 24.90, c: "tradicionais" }, { id: 't6', n: "X-Frango", p: 24.90, c: "tradicionais" },
+            { id: 't7', n: "X-Tudo", p: 39.90, c: "tradicionais" },
             // Artesanais
-            { id: 'a1', n: "KM Simples", p: 29.90, c: "artesanais", d: "Burger artesanal 180g e queijo." },
-            { id: 'a2', n: "KM Salada", p: 33.90, c: "artesanais", d: "Burger 180g, queijo e salada fresca." },
-            { id: 'a3', n: "KM Bacon", p: 37.90, c: "artesanais", d: "Burger 180g, cheddar e bacon." },
-            { id: 'a4', n: "KM Calabresa", p: 35.90, c: "artesanais", d: "Burger 180g com calabresa especial." },
-            { id: 'a5', n: "KM MAX", p: 49.90, c: "artesanais", d: "Duplo burger, bacon e cheddar extra." },
-            { id: 'a6', n: "KM Egg", p: 35.90, c: "artesanais", d: "Burger 180g com ovo perfeito." },
-            { id: 'a7', n: "KM Chicken", p: 29.90, c: "artesanais", d: "Burger de frango artesanal." },
-
+            { id: 'a1', n: "KM Simples", p: 29.90, c: "artesanais" }, { id: 'a2', n: "KM Salada", p: 33.90, c: "artesanais" },
+            { id: 'a3', n: "KM Bacon", p: 37.90, c: "artesanais" }, { id: 'a4', n: "KM Calabresa", p: 35.90, c: "artesanais" },
+            { id: 'a5', n: "KM MAX", p: 49.90, c: "artesanais" }, { id: 'a6', n: "KM Chicken", p: 29.90, c: "artesanais" },
             // Porções
-            { id: 'p1', n: "Batata P", p: 16.90, c: "porcoes" },
-            { id: 'p2', n: "Batata G", p: 26.90, c: "porcoes" },
-            { id: 'p3', n: "Batata Cheddar/Bacon", p: 43.90, c: "porcoes" },
-            { id: 'p4', n: "Calabresa c/ Fritas", p: 39.90, c: "porcoes" },
-            { id: 'p5', n: "Contra Filé Grelhado", p: 59.90, c: "porcoes" },
-            { id: 'p6', n: "Chapa Mix", p: 159.90, c: "porcoes", d: "A maior da casa! Serve 4 pessoas." },
-            { id: 'p7', n: "Frango Empanado", p: 49.90, c: "porcoes" },
-
+            { id: 'p1', n: "Batata P", p: 16.90, c: "porcoes" }, { id: 'p2', n: "Batata G", p: 26.90, c: "porcoes" },
+            { id: 'p6', n: "Chapa Mix", p: 159.90, c: "porcoes" }, { id: 'p7', n: "Frango Empanado", p: 49.90, c: "porcoes" },
             // Pastéis
-            { id: 'pas1', n: "Pastel Carne", p: 12.90, c: "pasteis" },
-            { id: 'pas2', n: "Pastel Queijo", p: 12.90, c: "pasteis" },
-            { id: 'pas3', n: "Pastel Pizza", p: 12.90, c: "pasteis" },
-            { id: 'pas4', n: "Pastel Bauru", p: 12.90, c: "pasteis" },
-            { id: 'pas5', n: "Carne c/ Queijo", p: 13.90, c: "pasteis" },
-            { id: 'pas6', n: "Frango c/ Catupiry", p: 13.90, c: "pasteis" },
-            { id: 'pas7', n: "Frango c/ Queijo", p: 13.90, c: "pasteis" },
-            { id: 'pas8', n: "Calabresa c/ Queijo", p: 13.90, c: "pasteis" },
+            { id: 'pas1', n: "Pastel Carne", p: 12.90, c: "pasteis" }, { id: 'pas2', n: "Pastel Queijo", p: 12.90, c: "pasteis" },
             { id: 'pas9', n: "Pastel Nutella", p: 15.90, c: "pasteis" },
-            { id: 'pas10', n: "Nutella c/ Banana", p: 15.90, c: "pasteis" },
-            { id: 'pas11', n: "Banana c/ Doce de Leite", p: 15.90, c: "pasteis" },
-
-            // Açaí (Tamanhos)
-            { id: 'ac1', n: "Copo 300ml", p: 10.90, c: "acai", isAcai: true },
-            { id: 'ac2', n: "Copo 400ml", p: 13.90, c: "acai", isAcai: true },
-            { id: 'ac3', n: "Copo 500ml", p: 20.90, c: "acai", isAcai: true },
-            { id: 'ac4', n: "Tigela 500ml", p: 28.90, c: "acai", isAcai: true },
-
-            // Bebidas
-            { id: 'b1', n: "Refri Lata", p: 7.90, c: "bebidas" },
-            { id: 'b2', n: "Suco Dell Vale", p: 7.90, c: "bebidas" },
-            { id: 'b3', n: "Refri 600ml", p: 11.90, c: "bebidas" },
-            { id: 'b4', n: "Água", p: 3.90, c: "bebidas" },
-            { id: 'b5', n: "Água com Gás", p: 4.90, c: "bebidas" },
-            { id: 'b6', n: "Cerveja Lata", p: 7.90, c: "bebidas" },
-            { id: 'b7', n: "Caipirinha", p: 23.90, c: "bebidas" }
+            // Açaí e Bebidas
+            { id: 'ac1', n: "Açaí 300ml", p: 10.90, c: "acai", isAcai: true }, { id: 'ac3', n: "Açaí 500ml", p: 20.90, c: "acai", isAcai: true },
+            { id: 'b1', n: "Refri Lata", p: 7.90, c: "bebidas" }, { id: 'b4', n: "Água", p: 3.90, c: "bebidas" }
         ];
 
-        // Adicionais do Açaí
-        const acaiExtras = [
-            { n: "Banana", p: 1.00 }, { n: "Morango", p: 3.00 }, { n: "Leite em pó", p: 1.00 },
-            { n: "Leite Condensado", p: 1.00 }, { n: "Paçoca", p: 2.00 }, { n: "Confete", p: 2.00 },
-            { n: "Granola", p: 2.00 }, { n: "Nutella", p: 6.00 }
-        ];
+        const acaiExtras = [{ n: "Banana", p: 1.00 }, { n: "Morango", p: 3.00 }, { n: "Leite em pó", p: 1.00 }, { n: "Leite Cond.", p: 1.00 }, { n: "Paçoca", p: 2.00 }];
 
-        let carrinho = [];
-        let total = 0;
-        let acaiAtual = null;
+        let carrinho = []; let totalProdutos = 0; let acaiAtual = null;
+
+        // Monitorar Status da Loja
+        db.ref('config/loja_aberta').on('value', snap => {
+            const aberta = snap.val();
+            const aviso = document.getElementById('aviso-fechado');
+            const badge = document.getElementById('badge-status');
+            
+            if (aberta === false) { // Fechado
+                aviso.classList.remove('hidden');
+                badge.innerHTML = '<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs font-bold text-red-500">Fechado</span>';
+            } else { // Aberto (ou null/undefined)
+                aviso.classList.add('hidden');
+                badge.innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs font-bold text-green-500">Aberto</span>';
+            }
+        });
 
         function renderMenu() {
             const container = document.getElementById('menu-container');
             const cats = [...new Set(cardapio.map(i => i.c))];
-            
             container.innerHTML = cats.map(cat => `
-                <section id="${cat}" class="pt-4">
-                    <h2 class="text-xs font-black text-gray-500 uppercase tracking-[0.2em] mb-4 border-l-4 border-red-600 pl-3">${cat}</h2>
-                    <div class="grid gap-3">
-                        ${cardapio.filter(i => i.c === cat).map(i => `
-                            <div class="card-item p-4 rounded-2xl flex justify-between items-center relative overflow-hidden group">
-                                <div class="z-10">
-                                    <h3 class="font-bold text-gray-100 text-sm mb-1">${i.n}</h3>
-                                    ${i.d ? `<p class="text-[10px] text-gray-500 mb-2 max-w-[200px]">${i.d}</p>` : ''}
-                                    <span class="text-gold font-black text-base">R$ ${i.p.toFixed(2)}</span>
-                                </div>
-                                <button onclick="${i.isAcai ? `abrirModalAcai('${i.n}', ${i.p})` : `add('${i.n}', ${i.p})`}" class="z-10 bg-[#2d2d35] text-white w-10 h-10 rounded-xl flex items-center justify-center font-bold shadow-lg border border-gray-700 active:bg-red-600 active:border-red-600 transition-colors">
-                                    <span class="text-lg">+</span>
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                </section>
-            `).join('');
+                <section id="${cat}" class="pt-4"><h2 class="text-xs font-black text-gray-500 uppercase tracking-widest mb-4 border-l-4 border-red-600 pl-3">${cat}</h2>
+                <div class="grid gap-3">${cardapio.filter(i => i.c === cat).map(i => `
+                    <div class="card-item p-4 rounded-2xl flex justify-between items-center group">
+                        <div><h3 class="font-bold text-gray-100 text-sm">${i.n}</h3><span class="text-gold font-black">R$ ${i.p.toFixed(2)}</span></div>
+                        <button onclick="${i.isAcai ? `abrirModalAcai('${i.n}',${i.p})` : `add('${i.n}',${i.p})`}" class="bg-[#2d2d35] text-white w-10 h-10 rounded-xl font-bold shadow-lg border border-gray-700 active:bg-red-600 transition">+</button>
+                    </div>`).join('')}</div></section>`).join('');
+            
+            // Preencher Select de Bairros
+            const select = document.getElementById('bairro-select');
+            select.innerHTML = listaBairros.map((b, index) => `<option value="${index}">${b.nome} (+ R$ ${b.taxa.toFixed(2)})</option>`).join('');
         }
 
-        // LÓGICA DO CARRINHO
-        function add(nome, preco) {
-            carrinho.push({n: nome, p: preco});
-            atualizarCarrinho();
-        }
-
+        function add(n, p) { carrinho.push({n, p}); atualizarCarrinho(); }
         function atualizarCarrinho() {
-            total = carrinho.reduce((sum, i) => sum + i.p, 0);
-            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2)}`;
+            totalProdutos = carrinho.reduce((sum, i) => sum + i.p, 0);
+            document.getElementById('cart-total').innerText = `R$ ${totalProdutos.toFixed(2)}`;
             document.getElementById('cart-count').innerText = carrinho.length;
-            
-            // Animação do botão
-            const btn = document.getElementById('cart-count');
-            btn.classList.remove('scale-100');
-            btn.classList.add('scale-125');
-            setTimeout(() => {
-                btn.classList.remove('scale-125');
-                btn.classList.add('scale-100');
-            }, 100);
         }
 
-        // LÓGICA DO AÇAÍ
-        function abrirModalAcai(nome, preco) {
-            acaiAtual = { nomeBase: nome, precoBase: preco, adicionais: [], total: preco };
-            document.getElementById('acai-titulo').innerText = nome;
-            
-            document.getElementById('lista-adicionais').innerHTML = acaiExtras.map(ex => `
-                <label class="flex justify-between items-center bg-[#121212] p-3 rounded-xl border border-gray-800 cursor-pointer">
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" onchange="toggleExtra('${ex.n}', ${ex.p})" class="w-5 h-5 rounded accent-purple-600 bg-gray-700 border-gray-600">
-                        <span class="text-sm text-gray-300 font-medium">${ex.n}</span>
-                    </div>
-                    <span class="text-xs font-bold text-purple-400">+ R$ ${ex.p.toFixed(2)}</span>
-                </label>
-            `).join('');
-            
-            atualizarTotalAcai();
-            document.getElementById('modal-acai').classList.remove('hidden');
+        // Modal Açaí
+        function abrirModalAcai(n, p) { 
+            acaiAtual = { n, p, ad: [], total: p }; 
+            document.getElementById('acai-titulo').innerText = n; 
+            document.getElementById('lista-adicionais').innerHTML = acaiExtras.map(ex => `<label class="flex justify-between p-3 border border-gray-700 rounded-xl mb-2"><div class="flex gap-2"><input type="checkbox" onchange="toggleEx('${ex.n}',${ex.p})" class="accent-purple-500"><span>${ex.n}</span></div><span class="text-purple-400">+R$${ex.p}</span></label>`).join('');
+            document.getElementById('acai-total-modal').innerText = `R$ ${p.toFixed(2)}`;
+            document.getElementById('modal-acai').classList.remove('hidden'); 
         }
-
-        function toggleExtra(nome, preco) {
-            const idx = acaiAtual.adicionais.indexOf(nome);
-            if(idx > -1) {
-                acaiAtual.adicionais.splice(idx, 1);
-                acaiAtual.total -= preco;
-            } else {
-                acaiAtual.adicionais.push(nome);
-                acaiAtual.total += preco;
-            }
-            atualizarTotalAcai();
-        }
-
-        function atualizarTotalAcai() {
+        function toggleEx(n, p) { 
+            const idx = acaiAtual.ad.indexOf(n);
+            if(idx>-1){ acaiAtual.ad.splice(idx,1); acaiAtual.total-=p; } else { acaiAtual.ad.push(n); acaiAtual.total+=p; }
             document.getElementById('acai-total-modal').innerText = `R$ ${acaiAtual.total.toFixed(2)}`;
         }
+        function confirmarAcai() { add(acaiAtual.n + (acaiAtual.ad.length ? ` (+ ${acaiAtual.ad.join(',')})` : ''), acaiAtual.total); document.getElementById('modal-acai').classList.add('hidden'); }
 
-        function confirmarAcai() {
-            let nomeFinal = acaiAtual.nomeBase;
-            if(acaiAtual.adicionais.length > 0) {
-                nomeFinal += ` (+ ${acaiAtual.adicionais.join(', ')})`;
-            }
-            add(nomeFinal, acaiAtual.total);
-            fecharModalAcai();
+        // Checkout com Taxa
+        function abrirCheckout() { 
+            if(carrinho.length === 0) return alert("Carrinho vazio!"); 
+            calcularTotalComTaxa();
+            document.getElementById('modal-checkout').classList.remove('hidden'); 
         }
-        
-        function fecharModalAcai() {
-            document.getElementById('modal-acai').classList.add('hidden');
-        }
-
-        // CHECKOUT E FIREBASE
-        function abrirCheckout() {
-            if(carrinho.length === 0) return alert("Seu carrinho está vazio!");
-            document.getElementById('modal-checkout').classList.remove('hidden');
-        }
-
         function toggleEndereco() {
             const tipo = document.getElementById('tipo-entrega').value;
-            const campo = document.getElementById('campo-endereco');
-            campo.style.display = tipo === 'retirada' ? 'none' : 'block';
+            document.getElementById('area-delivery').style.display = tipo === 'retirada' ? 'none' : 'block';
+            document.getElementById('linha-taxa').style.display = tipo === 'retirada' ? 'none' : 'flex';
+            calcularTotalComTaxa();
+        }
+        function calcularTotalComTaxa() {
+            const tipo = document.getElementById('tipo-entrega').value;
+            let taxa = 0;
+            if (tipo === 'entrega') {
+                const idx = document.getElementById('bairro-select').value;
+                taxa = listaBairros[idx].taxa;
+            }
+            document.getElementById('resumo-subtotal').innerText = `R$ ${totalProdutos.toFixed(2)}`;
+            document.getElementById('resumo-taxa').innerText = `R$ ${taxa.toFixed(2)}`;
+            document.getElementById('resumo-total').innerText = `R$ ${(totalProdutos + taxa).toFixed(2)}`;
         }
 
         function enviarPedido() {
             const nome = document.getElementById('nome').value;
             const tipo = document.getElementById('tipo-entrega').value;
-            const endereco = document.getElementById('endereco').value;
             const pag = document.getElementById('pagamento').value;
+            
+            let enderecoFinal = "RETIRADA NO BALCÃO";
+            let taxaFinal = 0;
+            
+            if (tipo === 'entrega') {
+                const bairroIdx = document.getElementById('bairro-select').value;
+                const bairroNome = listaBairros[bairroIdx].nome;
+                const rua = document.getElementById('rua-numero').value;
+                taxaFinal = listaBairros[bairroIdx].taxa;
+                
+                if (!rua) return alert("Digite a rua e número!");
+                enderecoFinal = `${bairroNome}, ${rua}`;
+            }
 
-            if(!nome) return alert("Digite seu nome!");
-            if(tipo === 'entrega' && !endereco) return alert("Digite o endereço de entrega!");
-
-            const btn = document.querySelector('.btn-add');
-            btn.innerHTML = "ENVIANDO...";
-            btn.disabled = true;
+            if (!nome) return alert("Digite seu nome!");
 
             const pedido = {
                 cliente: nome,
-                endereco: tipo === 'entrega' ? endereco : 'RETIRADA NO BALCÃO',
+                endereco: enderecoFinal,
                 pagamento: pag,
                 itens: carrinho.map(i => i.n).join(', '),
-                total: total,
+                subtotal: totalProdutos,
+                taxa: taxaFinal,
+                total: totalProdutos + taxaFinal,
                 status: 'novos',
                 hora: new Date().toLocaleTimeString('pt-BR').slice(0,5),
                 data: new Date().toISOString().split('T')[0]
             };
 
+            const btn = document.querySelector('.btn-add');
+            btn.innerHTML = "ENVIANDO..."; btn.disabled = true;
+
             db.ref('pedidos').push().set(pedido).then(() => {
-                alert("PEDIDO RECEBIDO! 🍔\nJá estamos preparando.");
+                alert("PEDIDO ENVIADO!");
                 window.location.reload();
             });
         }
-
-        window.onload = renderMenu;
+        renderMenu();
     </script>
 </body>
 </html>
