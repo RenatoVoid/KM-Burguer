@@ -168,3 +168,16 @@ END: ${p.endereco.toUpperCase()}
     </script>
 </body>
 </html>
+
+// Adicione isso dentro do seu script do gerente
+const somPedido = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+
+// Monitora especificamente novos pedidos entrando
+db.ref('pedidos').on('child_added', (snapshot) => {
+    const pedido = snapshot.val();
+    // Se o pedido acabou de entrar (status novos), toca o som
+    if(pedido.status === 'novos') {
+        somPedido.play().catch(e => console.log("Clique na página para ativar o som"));
+    }
+});
+
