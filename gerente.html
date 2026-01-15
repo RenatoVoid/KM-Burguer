@@ -2,173 +2,188 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>CENTRAL KM BURGER - Gestão</title>
+    <title>KM BURGER - PDV & GESTÃO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        /* VISUAL APP PROFISSIONAL */
-        body { background-color: #0c0c0e; color: #e4e4e7; font-family: 'Inter', sans-serif; }
-        .column-bg { background-color: #18181b; border: 1px solid #27272a; min-height: 80vh; border-radius: 24px; padding: 16px; }
+        body { background-color: #09090b; color: #e4e4e7; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .column-bg { background-color: #121214; border: 1px solid #1f1f23; min-height: 70vh; border-radius: 20px; padding: 12px; }
         
-        /* AJUSTE PARA IMPRESSORA TÉRMICA 80mm */
         @media print {
-            @page { margin: 0; size: auto; }
-            body { background: white !important; color: black !important; margin: 0; padding: 0; }
-            header, nav, button, .no-print { display: none !important; }
-            
-            #comanda-print {
-                display: block !important;
-                visibility: visible !important;
-                width: 72mm;
-                font-family: 'Courier New', Courier, monospace;
-                font-size: 13px;
-                color: black !important;
-                background: white !important;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                position: absolute;
-                left: 0;
-                top: 0;
-                padding: 10px;
-                line-height: 1.2;
-            }
+            body * { display: none !important; }
+            #comanda-print { display: block !important; width: 72mm; font-family: monospace; font-size: 12px; color: black !important; background: white !important; white-space: pre-wrap; padding: 10px; }
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="flex flex-col h-screen">
 
-    <header class="flex flex-col md:flex-row justify-between items-center mb-10 bg-zinc-900/50 p-6 rounded-3xl border border-zinc-800 shadow-2xl backdrop-blur-md">
+    <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-2xl">
         <div>
-            <h1 class="text-3xl font-black italic text-red-600 tracking-tighter">KM BURGER CENTRAL</h1>
-            <p class="text-zinc-500 font-mono text-[10px] uppercase tracking-[0.2em] mt-1">Gestão de Pedidos em Tempo Real</p>
+            <h1 class="text-xl font-black italic text-red-600 tracking-tighter">KM BURGER PRO</h1>
+            <p class="text-[10px] text-zinc-500 uppercase tracking-widest">Painel Administrativo & Caixa</p>
         </div>
-        <div class="mt-6 md:mt-0 bg-zinc-800/80 p-5 rounded-2xl border border-zinc-700 text-center min-w-[240px]">
-            <span class="text-[10px] text-zinc-400 uppercase font-black tracking-widest">Faturamento de Hoje</span>
-            <div id="faturamento" class="text-3xl font-black text-green-500 italic mt-1">R$ 0,00</div>
+        <div class="flex items-center gap-6">
+            <div class="text-right">
+                <span class="text-[10px] text-zinc-500 uppercase font-bold">Vendas Finalizadas</span>
+                <div id="faturamento" class="text-xl font-black text-green-500 italic">R$ 0,00</div>
+            </div>
+            <button onclick="window.location.reload()" class="bg-zinc-800 p-2 rounded-lg hover:bg-zinc-700">🔄</button>
         </div>
     </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div>
-            <h2 class="text-center font-black text-orange-500 mb-5 flex items-center justify-center gap-2 text-sm tracking-widest uppercase">
-                <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span></span>
-                Novos Pedidos
-            </h2>
-            <div id="coluna-novos" class="column-bg space-y-4"></div>
-        </div>
+    <div class="flex flex-1 overflow-hidden">
+        
+        <aside class="w-80 bg-zinc-900 border-r border-zinc-800 flex flex-col p-4 shadow-xl">
+            <h2 class="text-sm font-black text-zinc-400 uppercase mb-4 tracking-widest">🛒 Novo Pedido (Caixa)</h2>
+            
+            <div id="pdv-menu" class="flex-1 overflow-y-auto hide-scroll space-y-2 mb-4">
+                </div>
 
-        <div>
-            <h2 class="text-center font-black text-blue-500 mb-5 text-sm tracking-widest uppercase">🔥 Na Cozinha</h2>
-            <div id="coluna-preparando" class="column-bg space-y-4"></div>
-        </div>
+            <div class="bg-zinc-800 rounded-2xl p-4 border border-zinc-700">
+                <div id="pdv-resumo" class="text-[11px] text-zinc-400 mb-3 space-y-1">
+                    <p class="italic text-center">Nenhum item selecionado</p>
+                </div>
+                <div class="flex justify-between font-black text-white mb-4 border-t border-zinc-700 pt-2">
+                    <span>TOTAL:</span>
+                    <span id="pdv-total">R$ 0,00</span>
+                </div>
+                <input type="text" id="pdv-cliente" placeholder="Nome do Cliente" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-xs mb-2 outline-none focus:border-red-600">
+                <button onclick="finalizarPedidoLocal()" class="w-full bg-red-700 hover:bg-red-600 text-white font-black py-3 rounded-xl text-xs transition-all uppercase tracking-widest shadow-lg shadow-red-900/20">Lançar Pedido</button>
+            </div>
+        </aside>
 
-        <div>
-            <h2 class="text-center font-black text-green-500 mb-5 text-sm tracking-widest uppercase">✅ Finalizados</h2>
-            <div id="coluna-finalizados" class="column-bg space-y-4 opacity-50"></div>
-        </div>
+        <main class="flex-1 p-6 overflow-y-auto hide-scroll">
+            <div class="grid grid-cols-3 gap-6">
+                <div class="flex flex-col gap-4">
+                    <h3 class="text-center text-xs font-black text-orange-500 uppercase tracking-[0.2em]">🆕 Novos</h3>
+                    <div id="col-novos" class="column-bg space-y-3"></div>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <h3 class="text-center text-xs font-black text-blue-500 uppercase tracking-[0.2em]">🔥 Cozinha</h3>
+                    <div id="col-preparando" class="column-bg space-y-3"></div>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <h3 class="text-center text-xs font-black text-green-500 uppercase tracking-[0.2em]">✅ Concluídos</h3>
+                    <div id="col-finalizados" class="column-bg space-y-3 opacity-40"></div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <pre id="comanda-print" class="hidden"></pre>
 
     <script>
-        // Senha de Acesso
-        const psw = prompt("KM BURGER - Senha de Gerente:");
-        if(psw !== "km123") {
-            document.body.innerHTML = "<div class='h-screen flex items-center justify-center text-red-600 font-black'>ACESSO NEGADO</div>";
-        }
-
-        // Configuração Firebase
+        // CONFIGURAÇÕES FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4",
-            authDomain: "km-burguer.firebaseapp.com",
-            projectId: "km-burguer",
             databaseURL: "https://km-burguer-default-rtdb.firebaseio.com",
-            storageBucket: "km-burguer.firebasestorage.app",
-            messagingSenderId: "426968901226",
-            appId: "1:426968901226:web:e05f587e2c36acaa714c13"
+            projectId: "km-burguer"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Alerta Sonoro Profissional
-        const somNovoPedido = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        const somAlerta = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        // Escutar Banco de Dados
+        // MESMO CARDÁPIO DO CLIENTE
+        const cardapio = [
+            { n: "X-Burguer", p: 19.90 }, { n: "X-Salada", p: 22.90 }, { n: "X-Bacon", p: 27.90 },
+            { n: "KM-Simples", p: 29.90 }, { n: "KM-MAX", p: 49.90 }, { n: "Batata G", p: 26.90 },
+            { n: "Açaí 500ml", p: 20.90 }, { n: "Refri Lata", p: 7.90 }
+        ];
+
+        let pdvCarrinho = [];
+        let pdvTotal = 0;
+
+        function renderPDV() {
+            document.getElementById('pdv-menu').innerHTML = cardapio.map(item => `
+                <button onclick="pdvAdd('${item.n}', ${item.p})" class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl text-left hover:border-red-600 transition group">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-zinc-300 group-hover:text-white">${item.n}</span>
+                        <span class="text-[10px] font-black text-red-600">R$ ${item.p.toFixed(2)}</span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function pdvAdd(n, p) {
+            pdvCarrinho.push({n, p});
+            pdvTotal += p;
+            atualizarResumoPDV();
+        }
+
+        function atualizarResumoPDV() {
+            document.getElementById('pdv-resumo').innerHTML = pdvCarrinho.map(i => `<p>• ${i.n}</p>`).join('');
+            document.getElementById('pdv-total').innerText = `R$ ${pdvTotal.toFixed(2)}`;
+        }
+
+        function finalizarPedidoLocal() {
+            const cliente = document.getElementById('pdv-cliente').value;
+            if(!cliente || pdvCarrinho.length === 0) return alert("Preencha o cliente e escolha os itens!");
+
+            const pedido = {
+                cliente: cliente + " (BALCÃO)",
+                itens: pdvCarrinho.map(i => i.n).join(', '),
+                total: pdvTotal,
+                pagamento: "CAIXA",
+                endereco: "BALCÃO",
+                status: 'novos',
+                hora: new Date().toLocaleTimeString('pt-BR')
+            };
+
+            db.ref('pedidos').push().set(pedido).then(() => {
+                pdvCarrinho = []; pdvTotal = 0; document.getElementById('pdv-cliente').value = "";
+                atualizarResumoPDV();
+            });
+        }
+
+        // MONITORAMENTO EM TEMPO REAL
         db.ref('pedidos').on('value', (snap) => {
             const data = snap.val();
-            render(data);
-        });
+            let totalVendas = 0;
+            const cols = { novos: '', preparando: '', finalizados: '' };
 
-        // Som de Alerta para novos pedidos
-        db.ref('pedidos').on('child_added', (snap) => {
-            if(snap.val().status === 'novos') {
-                somNovoPedido.play().catch(() => console.log("Interaja com a página para ativar o som."));
-            }
-        });
-
-        function render(pedidos) {
-            const divs = { novos: '', preparando: '', finalizados: '' };
-            let totalDia = 0;
-
-            for (let id in pedidos) {
-                const p = pedidos[id];
+            for (let id in data) {
+                const p = data[id];
                 const card = `
-                    <div class="bg-zinc-900 p-5 rounded-3xl border-l-[6px] ${p.status === 'novos' ? 'border-orange-500 shadow-orange-900/10' : p.status === 'preparando' ? 'border-blue-500' : 'border-green-500'} shadow-xl">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-black text-white italic text-lg uppercase">${p.cliente.split(' ')[0]}</h3>
-                            <span class="text-[10px] bg-zinc-800 px-2 py-1 rounded-lg text-zinc-500 font-mono tracking-tighter">${p.hora}</span>
+                    <div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${p.status === 'novos' ? 'border-orange-500' : p.status === 'preparando' ? 'border-blue-500' : 'border-green-500'} shadow-lg mb-3">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-[10px] font-black uppercase text-zinc-300">${p.cliente}</span>
+                            <span class="text-[9px] text-zinc-600">${p.hora}</span>
                         </div>
-                        <p class="text-sm text-zinc-300 font-medium mb-4">${p.itens}</p>
-                        <div class="bg-zinc-800/50 p-3 rounded-xl text-[10px] text-zinc-500 mb-5 leading-relaxed">
-                            <p>📍 ${p.endereco}</p>
-                            <p class="mt-1 font-bold">💳 ${p.pagamento.toUpperCase()}</p>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xl font-black text-green-500">R$ ${p.total.toFixed(2)}</span>
+                        <p class="text-[11px] text-zinc-400 mb-3">${p.itens}</p>
+                        <div class="flex justify-between items-center border-t border-zinc-800 pt-3">
+                            <span class="text-xs font-black text-green-500">R$ ${p.total.toFixed(2)}</span>
                             <div class="flex gap-2">
-                                <button onclick="imprimirPedido('${id}')" class="bg-zinc-800 p-3 rounded-2xl hover:bg-zinc-700 transition">🖨️</button>
-                                ${p.status === 'novos' ? `<button onclick="update('${id}', 'preparando')" class="bg-blue-600 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider">Preparar</button>` : ''}
-                                ${p.status === 'preparando' ? `<button onclick="update('${id}', 'finalizados')" class="bg-green-600 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-wider">Finalizar</button>` : ''}
+                                <button onclick="imprimirPedido('${id}')" class="bg-zinc-800 p-2 rounded-lg text-[10px]">🖨️</button>
+                                ${p.status === 'novos' ? `<button onclick="update('${id}','preparando')" class="bg-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold">PREPARAR</button>` : ''}
+                                ${p.status === 'preparando' ? `<button onclick="update('${id}','finalizados')" class="bg-green-600 px-3 py-1 rounded-lg text-[10px] font-bold">FIM</button>` : ''}
                             </div>
                         </div>
-                    </div>
-                `;
-                divs[p.status] += card;
-                if(p.status === 'finalizados') totalDia += p.total;
+                    </div>`;
+                cols[p.status] += card;
+                if(p.status === 'finalizados') totalVendas += p.total;
             }
 
-            document.getElementById('coluna-novos').innerHTML = divs.novos || '<p class="text-center text-zinc-700 text-[10px] mt-20 font-bold uppercase tracking-widest">Silêncio na Cozinha...</p>';
-            document.getElementById('coluna-preparando').innerHTML = divs.preparando;
-            document.getElementById('coluna-finalizados').innerHTML = divs.finalizados;
-            document.getElementById('faturamento').innerText = `R$ ${totalDia.toFixed(2)}`;
-        }
+            document.getElementById('col-novos').innerHTML = cols.novos;
+            document.getElementById('col-preparando').innerHTML = cols.preparando;
+            document.getElementById('col-finalizados').innerHTML = cols.finalizados;
+            document.getElementById('faturamento').innerText = `R$ ${totalVendas.toFixed(2)}`;
+        });
 
         function update(id, st) { db.ref('pedidos/'+id).update({status: st}); }
 
         function imprimirPedido(id) {
             db.ref('pedidos/'+id).once('value', (s) => {
                 const p = s.val();
-                const comanda = `
-      KM BURGER 🍔
-----------------------------
-ID: #${id.slice(-4)}
-HORA: ${p.hora}
-CLIENTE: ${p.cliente.toUpperCase()}
-----------------------------
-ITENS:
-${p.itens.split(', ').join('\n')}
-
-----------------------------
-TOTAL: R$ ${p.total.toFixed(2)}
-PAGTO: ${p.pagamento.toUpperCase()}
-END: ${p.endereco.toUpperCase()}
-----------------------------
-\n\n\n.`;
-                document.getElementById('comanda-print').innerText = comanda;
-                setTimeout(() => window.print(), 200);
+                const texto = `KM BURGER\n----------------\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\n----------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------\nTOTAL: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\n----------------\n\n\n\n.`;
+                document.getElementById('comanda-print').innerText = texto;
+                window.print();
             });
         }
+
+        renderPDV();
     </script>
 </body>
 </html>
