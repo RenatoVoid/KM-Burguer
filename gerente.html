@@ -2,247 +2,181 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KM BURGER - Oficial</title>
+    <title>KM BURGER PRO - Gestão</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        /* AS CORES CLÁSSICAS */
-        .bg-km-vinho { background-color: #4a0404; }
-        .text-km-amarelo { color: #f59e0b; }
-        .border-km-vinho { border-color: #4a0404; }
-        
-        /* Lista de sugestão de bairros */
-        #sugestoes-bairro { max-height: 150px; overflow-y: auto; background: white; border: 1px solid #ddd; position: absolute; width: 100%; z-index: 50; }
-        .bairro-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
-        .bairro-item:hover { background-color: #f3f4f6; }
-        
-        /* Ocultar barra de rolagem */
+        body { background-color: #09090b; color: #e4e4e7; font-family: 'Inter', sans-serif; }
+        .aba-ativa { background-color: #b91c1c !important; color: white !important; border-color: #b91c1c !important; }
+        .column-bg { background-color: #121214; border: 1px solid #1f1f23; min-height: 70vh; border-radius: 20px; padding: 12px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        @media print { body * { display: none !important; } #area-print { display: block !important; width: 72mm; color: black !important; font-family: monospace; font-size: 12px; padding: 10px; white-space: pre-wrap; } }
     </style>
 </head>
-<body class="bg-gray-100 font-sans pb-32">
+<body class="flex flex-col h-screen overflow-hidden">
 
-    <div id="aviso-fechado" class="hidden fixed inset-0 z-[60] bg-black/90 flex flex-col items-center justify-center text-center p-6 backdrop-blur-sm">
-        <div class="bg-red-600 p-6 rounded-full mb-4 text-white text-4xl shadow-lg border-4 border-white">🔒</div>
-        <h2 class="text-3xl font-black text-white mb-2 uppercase">Loja Fechada</h2>
-        <p class="text-gray-300 font-bold">Nosso delivery abre em breve!</p>
-    </div>
-
-    <header class="bg-km-vinho p-4 text-center text-white shadow-xl sticky top-0 z-50">
-        <div class="flex justify-between items-center mb-4">
-            <div>
-                <h1 class="text-3xl font-black italic text-km-amarelo tracking-tighter">KM BURGER 🍔</h1>
-                <div id="badge-status" class="flex items-center gap-1 mt-1 justify-start">
-                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <p class="text-[10px] font-bold text-green-400 font-mono uppercase">Aberto Agora</p>
-                </div>
-            </div>
+    <header class="bg-zinc-950 border-b border-zinc-900 p-4 flex justify-between items-center shadow-2xl">
+        <div class="flex items-center gap-6">
+            <h1 class="text-xl font-black italic text-red-600 tracking-tighter">KM BURGER PRO</h1>
+            <nav class="flex bg-zinc-900 rounded-xl p-1 gap-1 border border-zinc-800">
+                <button onclick="mudar('caixa')" id="b-caixa" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-zinc-500 hover:text-white">🛒 Caixa</button>
+                <button onclick="mudar('cozinha')" id="b-cozinha" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-zinc-500 hover:text-white">🔥 Cozinha</button>
+                <button onclick="mudar('relatorio')" id="b-relatorio" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-zinc-500 hover:text-white">📊 Relatório</button>
+            </nav>
         </div>
-        
-        <nav class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-            <a href="#tradicional" class="bg-black/20 px-4 py-2 rounded-full text-xs font-bold text-km-amarelo border border-km-amarelo/30 whitespace-nowrap">Tradicionais</a>
-            <a href="#artesanal" class="bg-black/20 px-4 py-2 rounded-full text-xs font-bold text-km-amarelo border border-km-amarelo/30 whitespace-nowrap">Artesanais</a>
-            <a href="#porcoes" class="bg-black/20 px-4 py-2 rounded-full text-xs font-bold text-km-amarelo border border-km-amarelo/30 whitespace-nowrap">Porções</a>
-            <a href="#pasteis" class="bg-black/20 px-4 py-2 rounded-full text-xs font-bold text-km-amarelo border border-km-amarelo/30 whitespace-nowrap">Pastéis</a>
-            <a href="#acai" class="bg-black/20 px-4 py-2 rounded-full text-xs font-bold text-km-amarelo border border-km-amarelo/30 whitespace-nowrap">Açaí</a>
-            <a href="#bebidas" class="bg-black/20 px-4 py-2 rounded-full text-xs font-bold text-km-amarelo border border-km-amarelo/30 whitespace-nowrap">Bebidas</a>
-        </nav>
+        <div class="text-right"><span class="text-[9px] text-zinc-500 font-black uppercase tracking-widest">Faturamento Hoje:</span><div id="fat-hoje" class="text-xl font-black text-green-500">R$ 0,00</div></div>
     </header>
 
-    <main class="max-w-md mx-auto p-4 space-y-8" id="menu-container"></main>
-
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-2xl max-w-md mx-auto z-40">
-        <div class="flex justify-between items-center mb-2 px-2 font-bold text-gray-700">
-            <span>Total:</span>
-            <span id="cart-total" class="text-2xl text-green-600">R$ 0,00</span>
+    <div id="aba-caixa" class="hidden flex-1 flex overflow-hidden">
+        <div class="flex-1 flex flex-col p-6 overflow-hidden">
+            <div id="pdv-cats" class="flex gap-2 overflow-x-auto mb-6 pb-2 border-b border-zinc-800 no-scrollbar"></div>
+            <div id="pdv-grid" class="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4 pr-2 no-scrollbar"></div>
         </div>
-        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg text-lg active:scale-95 transition uppercase">Finalizar Pedido</button>
-    </div>
-
-    <div id="modal-checkout" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h2 class="text-xl font-black mb-4 text-km-vinho text-center uppercase border-b pb-2">Seus Dados</h2>
-            
-            <div class="space-y-3">
-                <input type="text" id="nome" placeholder="Seu Nome Completo" class="w-full p-4 border rounded-xl outline-none focus:border-km-vinho bg-gray-50">
-                
-                <select id="tipo-entrega" onchange="toggleEndereco()" class="w-full p-4 border rounded-xl outline-none bg-white font-bold text-gray-700">
-                    <option value="entrega">🛵 Entrega (Delivery)</option>
-                    <option value="retirada">🏪 Retirada na Loja</option>
-                </select>
-
-                <div id="area-delivery" class="space-y-3">
-                    <div class="relative">
-                        <input type="text" id="busca-bairro" onkeyup="filtrarBairros()" onclick="filtrarBairros()" placeholder="Digite seu Bairro..." class="w-full p-4 border rounded-xl outline-none focus:border-km-vinho bg-gray-50" autocomplete="off">
-                        <div id="sugestoes-bairro" class="hidden rounded-xl shadow-xl"></div>
-                    </div>
-                    <input type="text" id="rua-numero" placeholder="Rua e Número" class="w-full p-4 border rounded-xl outline-none focus:border-km-vinho bg-gray-50">
-                </div>
-
-                <select id="pagamento" class="w-full p-4 border rounded-xl outline-none bg-white">
-                    <option value="Pix">Pagamento via PIX</option>
-                    <option value="Cartão">Cartão de Crédito/Débito</option>
-                    <option value="Dinheiro">Dinheiro (Precisa de troco?)</option>
-                </select>
-
-                <div class="bg-gray-100 p-4 rounded-xl text-sm space-y-1 text-gray-600">
-                    <div class="flex justify-between"><span>Subtotal:</span><span id="resumo-sub">R$ 0,00</span></div>
-                    <div class="flex justify-between" id="linha-taxa"><span>Taxa Entrega:</span><span id="resumo-taxa">R$ 0,00</span></div>
-                    <div class="flex justify-between font-black text-lg text-km-vinho pt-2 border-t border-gray-300"><span>TOTAL:</span><span id="resumo-total">R$ 0,00</span></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 mt-6">
-                <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="py-4 text-gray-500 font-bold uppercase text-xs">Voltar</button>
-                <button onclick="enviarPedido()" class="bg-green-600 text-white py-4 rounded-xl font-bold shadow-lg uppercase text-sm">Enviar Pedido</button>
+        <div class="w-96 bg-zinc-900 border-l border-zinc-800 p-6 flex flex-col shadow-2xl">
+            <h2 class="text-xs font-black text-zinc-500 uppercase mb-4 tracking-widest">Pedido Balcão</h2>
+            <div id="pdv-list" class="flex-1 overflow-y-auto text-sm space-y-2 mb-4 border-b border-zinc-800 pb-4 no-scrollbar text-zinc-400"></div>
+            <div class="space-y-4">
+                <div class="flex justify-between text-2xl font-black text-white"><span>TOTAL:</span><span id="pdv-total" class="text-red-500">R$ 0,00</span></div>
+                <input type="text" id="pdv-nome" placeholder="Nome do Cliente (Opcional)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-red-600 transition-all">
+                <button onclick="enviarPDV()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-5 rounded-2xl text-sm uppercase shadow-xl transition-all active:scale-95 tracking-widest">Lançar Venda</button>
             </div>
         </div>
     </div>
 
-    <div id="modal-acai" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6">
-            <h2 id="acai-titulo" class="text-xl font-bold text-purple-900 mb-4">Monte seu Açaí</h2>
-            <div id="lista-adicionais" class="space-y-2 max-h-60 overflow-y-auto pr-2"></div>
-            <div class="border-t pt-4 mt-4 font-bold flex flex-col gap-3">
-                <div class="flex justify-between text-lg"><span>Total:</span><span id="acai-total-modal" class="text-green-600">R$ 0,00</span></div>
-                <button onclick="confirmarAcai()" class="w-full bg-purple-600 text-white py-3 rounded-xl">ADICIONAR</button>
-            </div>
+    <div id="aba-cozinha" class="hidden flex-1 p-6 overflow-y-auto no-scrollbar">
+        <div class="grid grid-cols-3 gap-6">
+            <div><h3 class="text-center text-[10px] font-black text-orange-500 uppercase mb-4 tracking-widest">🆕 Novos</h3><div id="col-novos" class="column-bg space-y-3"></div></div>
+            <div><h3 class="text-center text-[10px] font-black text-blue-500 uppercase mb-4 tracking-widest">🔥 Na Chapa</h3><div id="col-preparando" class="column-bg space-y-3"></div></div>
+            <div><h3 class="text-center text-[10px] font-black text-green-500 uppercase mb-4 tracking-widest">✅ Hoje</h3><div id="col-finalizados" class="column-bg space-y-3 opacity-40"></div></div>
         </div>
     </div>
+
+    <div id="aba-relatorio" class="hidden flex-1 p-10 overflow-y-auto no-scrollbar">
+        <div class="max-w-3xl mx-auto bg-zinc-900 p-8 rounded-[32px] border border-zinc-800 shadow-2xl">
+            <h2 class="text-2xl font-black mb-6 italic text-white">Fechamento de Caixa</h2>
+            <div class="flex gap-4 items-end mb-10">
+                <div class="flex-1"><label class="block text-[10px] font-black text-zinc-500 mb-2 uppercase tracking-widest">Selecione a Data:</label><input type="date" id="rel-data" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-red-600"></div>
+                <button onclick="gerarRel()" class="bg-red-600 hover:bg-red-700 px-8 py-4 rounded-xl font-black text-xs uppercase shadow-lg transition-all">Gerar Relatório</button>
+            </div>
+            <div id="rel-resultado" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <pre id="area-print" class="hidden"></pre>
 
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyCXNjKn-uP2dpf_OG_pzUkqa-RnS-3V1L4", databaseURL: "https://km-burguer-default-rtdb.firebaseio.com", projectId: "km-burguer" };
+        const firebaseConfig = { databaseURL: "https://km-burguer-default-rtdb.firebaseio.com", projectId: "km-burguer" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const som = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
-        // --- LISTA DE BAIRROS (EDITE AQUI) ---
-        const listaBairros = [
-            { nome: "Centro", taxa: 0.00 }, { nome: "Vila Nova", taxa: 5.00 }, { nome: "Jardim das Flores", taxa: 7.00 },
-            { nome: "Parque Industrial", taxa: 10.00 }, { nome: "Zona Rural", taxa: 15.00 }
-        ];
-
+        // CARDÁPIO COMPLETO (MESMO DO CLIENTE)
         const cardapio = [
-            { n: "X-Burguer", p: 19.90, c: "Tradicional" }, { n: "X-Salada", p: 22.90, c: "Tradicional" },
-            { n: "X-Bacon", p: 27.90, c: "Tradicional" }, { n: "X-Calabresa", p: 24.90, c: "Tradicional" },
-            { n: "X-Egg", p: 24.90, c: "Tradicional" }, { n: "X-Frango", p: 24.90, c: "Tradicional" },
-            { n: "X-Tudo", p: 39.90, c: "Tradicional" },
-            { n: "KM-Simples", p: 29.90, c: "Artesanal" }, { n: "KM-Salada", p: 33.90, c: "Artesanal" },
-            { n: "KM-Bacon", p: 37.90, c: "Artesanal" }, { n: "KM-MAX", p: 49.90, c: "Artesanal" },
-            { n: "Batata P", p: 16.90, c: "Porções" }, { n: "Batata G", p: 26.90, c: "Porções" },
-            { n: "Chapa Mix", p: 159.90, c: "Porções" }, { n: "Frango Empanado", p: 49.90, c: "Porções" },
-            { n: "Pastel Carne", p: 12.90, c: "Pastéis" }, { n: "Pastel Queijo", p: 12.90, c: "Pastéis" },
-            { n: "Pastel Nutella", p: 15.90, c: "Pastéis" },
-            { n: "Açaí 300ml", p: 10.90, c: "Açaí", isAcai: true }, { n: "Açaí 500ml", p: 20.90, c: "Açaí", isAcai: true },
-            { n: "Refri Lata", p: 7.90, c: "Bebidas" }, { n: "Água", p: 3.90, c: "Bebidas" }
+            { n: "X-Burguer", p: 19.90, c: "Hamburguer" }, { n: "X-Salada", p: 22.90, c: "Hamburguer" }, { n: "X-Bacon", p: 27.90, c: "Hamburguer" }, { n: "X-Calabresa", p: 24.90, c: "Hamburguer" }, { n: "X-EGG", p: 24.90, c: "Hamburguer" }, { n: "X-Frango", p: 24.90, c: "Hamburguer" }, { n: "X-Tudo", p: 39.90, c: "Hamburguer" },
+            { n: "KM Simples", p: 29.90, c: "Artesanal" }, { n: "KM Salada", p: 33.90, c: "Artesanal" }, { n: "KM Bacon", p: 37.90, c: "Artesanal" }, { n: "KM Calabresa", p: 35.90, c: "Artesanal" }, { n: "KM MAX", p: 49.90, c: "Artesanal" }, { n: "KM Egg", p: 35.90, c: "Artesanal" }, { n: "KM Chicken", p: 29.90, c: "Artesanal" },
+            { n: "Batata P", p: 16.90, c: "Porções" }, { n: "Batata G", p: 26.90, c: "Porções" }, { n: "Batata Queijo/Bacon G", p: 43.90, c: "Porções" }, { n: "Calabresa c/ Fritas", p: 39.90, c: "Porções" }, { n: "Contra Filé Grelhado", p: 59.90, c: "Porções" }, { n: "Chapa Mix", p: 159.90, c: "Porções" }, { n: "Frango Empanado", p: 49.90, c: "Porções" },
+            { n: "Pastel Carne", p: 12.90, c: "Pastéis" }, { n: "Pastel Queijo", p: 12.90, c: "Pastéis" }, { n: "Pastel Pizza", p: 12.90, c: "Pastéis" }, { n: "Pastel Bauru", p: 12.90, c: "Pastéis" }, { n: "Pastel Carne c/ Queijo", p: 13.90, c: "Pastéis" }, { n: "Pastel Frango c/ Catupiry", p: 13.90, c: "Pastéis" }, { n: "Pastel Nutella", p: 15.90, c: "Pastéis" },
+            { n: "Açaí 300ml", p: 10.90, c: "Açaí" }, { n: "Açaí 500ml", p: 20.90, c: "Açaí" },
+            { n: "Refri Lata", p: 7.90, c: "Bebidas" }, { n: "Suco Dell Vale", p: 7.90, c: "Bebidas" }, { n: "Refri 600ml", p: 11.90, c: "Bebidas" }, { n: "Água", p: 3.90, c: "Bebidas" }, { n: "Cerveja Lata", p: 7.90, c: "Bebidas" }, { n: "Caipirinha", p: 23.90, c: "Bebidas" }
         ];
-        const acaiExtras = [{ n: "Banana", p: 1.00 }, { n: "Morango", p: 3.00 }, { n: "Leite em pó", p: 1.00 }, { n: "Leite Cond.", p: 1.00 }, { n: "Paçoca", p: 2.00 }];
-        let carrinho = []; let total = 0; let taxaEntrega = 0; let acaiAtual = null;
 
-        // Monitorar Loja Aberta/Fechada
-        db.ref('config/loja_aberta').on('value', snap => {
-            const status = snap.val();
-            const aviso = document.getElementById('aviso-fechado');
-            const badge = document.getElementById('badge-status');
-            if(status === false) { aviso.classList.remove('hidden'); badge.innerHTML = '<span class="text-xs font-bold text-red-400">FECHADO</span>'; } 
-            else { aviso.classList.add('hidden'); badge.innerHTML = '<div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div><p class="text-[10px] font-bold text-green-400 uppercase">Aberto Agora</p>'; }
+        let catAtiva = "Hamburguer"; let pdvCart = []; let pdvTotal = 0;
+
+        function mudar(aba) {
+            ["caixa", "cozinha", "relatorio"].forEach(id => {
+                document.getElementById(`aba-${id}`).classList.toggle('hidden', id !== aba);
+                document.getElementById(`b-${id}`).classList.toggle('aba-ativa', id === aba);
+            });
+            if(aba === 'caixa') renderPDV();
+        }
+
+        function renderPDV() {
+            const cats = [...new Set(cardapio.map(i => i.c))];
+            document.getElementById('pdv-cats').innerHTML = cats.map(c => `
+                <button onclick="filtrar('${c}')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase border border-zinc-800 transition-all ${catAtiva === c ? 'bg-red-600 text-white border-red-600' : 'bg-zinc-900 text-zinc-500 hover:bg-zinc-800 hover:text-white'}">${c}</button>
+            `).join('');
+            document.getElementById('pdv-grid').innerHTML = cardapio.filter(i => i.c === catAtiva).map(i => `
+                <button onclick="addPDV('${i.n}', ${i.p})" class="bg-zinc-900 border border-zinc-800 p-4 rounded-2xl text-left shadow-lg hover:border-red-600 transition-all group">
+                    <p class="text-xs font-bold text-white mb-1 uppercase group-hover:text-red-500 transition-colors">${i.n}</p>
+                    <p class="text-sm font-black text-red-600 italic">R$ ${i.p.toFixed(2)}</p>
+                </button>`).join('');
+        }
+
+        function filtrar(c) { catAtiva = c; renderPDV(); }
+
+        function addPDV(n,p) { 
+            pdvCart.push({n,p}); pdvTotal += p; 
+            document.getElementById('pdv-list').innerHTML = pdvCart.map(i => `<div class="flex justify-between border-b border-zinc-800 pb-1"><span>• ${i.n}</span><span class="text-white font-bold">R$ ${i.p.toFixed(2)}</span></div>`).join(''); 
+            document.getElementById('pdv-total').innerText = `R$ ${pdvTotal.toFixed(2)}`; 
+        }
+
+        function enviarPDV() { 
+            const n = document.getElementById('pdv-nome').value || "Cliente Balcão"; 
+            if(pdvCart.length === 0) return alert("Adicione produtos!"); 
+            db.ref('pedidos').push().set({ 
+                cliente: n + " (CAIXA)", itens: pdvCart.map(i => i.n).join(', '), 
+                total: pdvTotal, status: 'novos', hora: new Date().toLocaleTimeString('pt-BR').slice(0,5), 
+                pagamento: "BALCÃO", endereco: "RETIRADA",
+                data: new Date().toISOString().split('T')[0] 
+            }).then(() => { 
+                pdvCart=[]; pdvTotal=0; document.getElementById('pdv-nome').value=''; 
+                document.getElementById('pdv-list').innerHTML='<p class="text-zinc-600 italic text-center mt-10 text-xs">Carrinho vazio.</p>'; document.getElementById('pdv-total').innerText='R$ 0,00'; 
+            }); 
+        }
+
+        db.ref('pedidos').on('value', snap => {
+            const data = snap.val(); const hoje = new Date().toISOString().split('T')[0];
+            let fat = 0; const cols = { novos: '', preparando: '', finalizados: '' };
+            for(let id in data) {
+                const p = data[id];
+                const card = `
+                    <div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${p.status==='novos'?'border-orange-500 shadow-orange-900/20':'border-blue-600 shadow-blue-900/20'} mb-3 shadow-xl">
+                        <div class="flex justify-between items-start mb-2"><span class="text-[10px] font-black uppercase text-white tracking-widest">${p.cliente}</span><span class="text-[9px] text-zinc-500 font-mono bg-zinc-950 px-2 py-1 rounded-lg">${p.hora}</span></div>
+                        <p class="text-[11px] text-zinc-300 my-3 font-medium leading-tight">${p.itens}</p>
+                        <div class="flex justify-between pt-3 border-t border-zinc-800 items-center">
+                            <span class="text-sm font-black text-green-500 italic">R$ ${p.total.toFixed(2)}</span>
+                            <div class="flex gap-2">
+                                <button onclick="imp('${id}')" class="bg-zinc-950 p-2 rounded-lg text-xs hover:bg-zinc-800 transition-colors">🖨️</button>
+                                ${p.status==='novos'?`<button onclick="up('${id}','preparando')" class="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors">Preparar</button>`:''}
+                                ${p.status==='preparando'?`<button onclick="up('${id}','finalizados')" class="bg-green-600 hover:bg-green-700 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors">Finalizar</button>`:''}
+                            </div>
+                        </div>
+                    </div>`;
+                if(p.data === hoje && p.status === 'finalizados') fat += p.total;
+                if(p.status !== 'finalizados' || p.data === hoje) cols[p.status] += card;
+            }
+            document.getElementById('col-novos').innerHTML = cols.novos; document.getElementById('col-preparando').innerHTML = cols.preparando; document.getElementById('col-finalizados').innerHTML = cols.finalizados; document.getElementById('fat-hoje').innerText = `R$ ${fat.toFixed(2)}`;
         });
 
-        function renderMenu() {
-            const container = document.getElementById('menu-container');
-            const cats = [...new Set(cardapio.map(i => i.c))];
-            container.innerHTML = cats.map(cat => `
-                <section id="${cat.toLowerCase()}"><h2 class="font-black text-lg text-km-vinho mb-3 border-l-4 border-km-vinho pl-2 uppercase">${cat}</h2>
-                <div class="grid gap-3">${cardapio.filter(i => i.c === cat).map(i => `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center">
-                        <div><p class="font-bold text-gray-800 uppercase text-sm">${i.n}</p><p class="text-green-600 font-black">R$ ${i.p.toFixed(2)}</p></div>
-                        <button onclick="${i.isAcai ? `abrirAcai('${i.n}',${i.p})` : `add('${i.n}',${i.p})`}" class="bg-km-vinho text-white w-10 h-10 rounded-full font-bold shadow-lg active:scale-95">+</button>
-                    </div>`).join('')}</div></section>`).join('');
+        db.ref('pedidos').on('child_added', s => { if(s.val().status === 'novos') som.play().catch(() => {}); });
+        function up(id, st) { db.ref('pedidos/'+id).update({status: st}); }
+        function imp(id) { 
+            db.ref('pedidos/'+id).once('value', s => { 
+                const p = s.val(); 
+                document.getElementById('area-print').innerText = `KM BURGER\n----------------\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\n----------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------\nTOTAL: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\nEND: ${p.endereco}\n----------------\n\n\n.`; 
+                window.print(); 
+            }); 
         }
 
-        // BUSCA BAIRROS INTELIGENTE
-        function filtrarBairros() {
-            const termo = document.getElementById('busca-bairro').value.toLowerCase();
-            const lista = document.getElementById('sugestoes-bairro');
-            lista.innerHTML = '';
-            
-            if(termo.length < 1) { lista.classList.add('hidden'); return; }
-            
-            const matches = listaBairros.filter(b => b.nome.toLowerCase().includes(termo));
-            if(matches.length > 0) {
-                matches.forEach(b => {
-                    const div = document.createElement('div');
-                    div.className = "bairro-item text-sm flex justify-between";
-                    div.innerHTML = `<span>${b.nome}</span><span class="font-bold text-green-600">+ R$ ${b.taxa.toFixed(2)}</span>`;
-                    div.onclick = () => {
-                        document.getElementById('busca-bairro').value = b.nome;
-                        taxaEntrega = b.taxa;
-                        lista.classList.add('hidden');
-                        calcTotal();
-                    };
-                    lista.appendChild(div);
-                });
-                lista.classList.remove('hidden');
-            } else { lista.classList.add('hidden'); }
+        function gerarRel() {
+            const dataB = document.getElementById('rel-data').value;
+            if(!dataB) return alert("Selecione a data!");
+            db.ref('pedidos').once('value', s => {
+                const data = s.val(); let t = 0; let l = '';
+                for(let id in data) { 
+                    const p = data[id]; 
+                    if(p.data === dataB && p.status === 'finalizados') { 
+                        t += p.total; 
+                        l += `<div class="flex justify-between border-b border-zinc-800 py-3 text-[11px] font-mono text-zinc-400 hover:bg-zinc-900/50 px-2 rounded transition-colors"><span>${p.hora} | ${p.cliente}</span><span class="text-white font-bold">R$ ${p.total.toFixed(2)}</span></div>`; 
+                    } 
+                }
+                document.getElementById('rel-resultado').innerHTML = t > 0 ? `
+                    <div class="bg-green-950/30 p-6 rounded-2xl text-center border border-green-900/50 mb-8"><span class="block text-[10px] font-black uppercase text-green-500 mb-1 tracking-widest">Total Vendido</span><span class="text-4xl font-black text-green-400">R$ ${t.toFixed(2)}</span></div>
+                    <div class="bg-zinc-900/50 rounded-2xl p-4 border border-zinc-800 max-h-[400px] overflow-y-auto no-scrollbar">${l}</div>` : '<p class="text-zinc-600 italic text-center py-10">Nenhuma venda finalizada nesta data.</p>';
+            });
         }
-
-        function add(n,p){ carrinho.push({n,p}); atualizarTotal(); }
-        function atualizarTotal() { total = carrinho.reduce((s,i)=>s+i.p,0); document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2)}`; }
-        
-        function abrirCheckout() { 
-            if(carrinho.length===0) return alert("Carrinho vazio!"); 
-            calcTotal();
-            document.getElementById('modal-checkout').classList.remove('hidden'); 
-        }
-
-        function toggleEndereco() {
-            const tipo = document.getElementById('tipo-entrega').value;
-            const area = document.getElementById('area-delivery');
-            area.style.display = tipo === 'retirada' ? 'none' : 'block';
-            taxaEntrega = tipo === 'retirada' ? 0 : taxaEntrega;
-            // Se mudou para entrega e está vazio, reseta taxa
-            if(tipo === 'entrega' && document.getElementById('busca-bairro').value === '') taxaEntrega = 0;
-            document.getElementById('linha-taxa').style.display = tipo === 'retirada' ? 'none' : 'flex';
-            calcTotal();
-        }
-
-        function calcTotal() {
-            document.getElementById('resumo-sub').innerText = `R$ ${total.toFixed(2)}`;
-            document.getElementById('resumo-taxa').innerText = `R$ ${taxaEntrega.toFixed(2)}`;
-            document.getElementById('resumo-total').innerText = `R$ ${(total + taxaEntrega).toFixed(2)}`;
-        }
-
-        function enviarPedido() {
-            const n = document.getElementById('nome').value;
-            const tipo = document.getElementById('tipo-entrega').value;
-            let end = "RETIRADA";
-            if(tipo === 'entrega') {
-                const b = document.getElementById('busca-bairro').value;
-                const r = document.getElementById('rua-numero').value;
-                if(!b || !r) return alert("Endereço incompleto!");
-                end = `${b}, ${r}`;
-            }
-            if(!n) return alert("Nome obrigatório!");
-
-            db.ref('pedidos').push().set({
-                cliente: n, itens: carrinho.map(i=>i.n).join(', '),
-                total: total + taxaEntrega, taxa: taxaEntrega,
-                pagamento: document.getElementById('pagamento').value,
-                endereco: end, status: 'novos',
-                hora: new Date().toLocaleTimeString('pt-BR').slice(0,5),
-                data: new Date().toISOString().split('T')[0]
-            }).then(() => { alert("Enviado!"); window.location.reload(); });
-        }
-
-        function abrirAcai(n,p){ acaiAtual={n,p,ad:[],t:p}; document.getElementById('acai-titulo').innerText=n; document.getElementById('lista-adicionais').innerHTML=acaiExtras.map(e=>`<label class="flex justify-between p-2 border rounded mb-2"><div class="flex gap-2"><input type="checkbox" onchange="toggleAd('${e.n}',${e.p})"><span>${e.n}</span></div><span>+R$${e.p}</span></label>`).join(''); document.getElementById('acai-total-modal').innerText=`R$ ${p.toFixed(2)}`; document.getElementById('modal-acai').classList.remove('hidden'); }
-        function toggleAd(n,p){ const i=acaiAtual.ad.indexOf(n); if(i>-1){acaiAtual.ad.splice(i,1);acaiAtual.t-=p}else{acaiAtual.ad.push(n);acaiAtual.t+=p} document.getElementById('acai-total-modal').innerText=`R$ ${acaiAtual.t.toFixed(2)}`; }
-        function confirmarAcai(){ add(acaiAtual.n + (acaiAtual.ad.length ? ` (+ ${acaiAtual.ad.join(',')})` : ''), acaiAtual.t); document.getElementById('modal-acai').classList.add('hidden'); }
-
-        // Fechar lista se clicar fora
-        document.addEventListener('click', e => { if(e.target.id !== 'busca-bairro') document.getElementById('sugestoes-bairro').classList.add('hidden'); });
-
-        renderMenu();
+        mudar('caixa');
     </script>
 </body>
 </html>
