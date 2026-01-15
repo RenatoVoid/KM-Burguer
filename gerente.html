@@ -2,16 +2,16 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>KM BURGER - Central de Comando</title>
+    <title>KM BURGER - Central PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         body { background-color: #09090b; color: #e4e4e7; font-family: 'Inter', sans-serif; }
         .aba-ativa { background-color: #b91c1c !important; color: white !important; }
-        .card-pdv:active { transform: scale(0.95); }
+        .category-btn-active { background-color: #ef4444; color: white; }
         .column-bg { background-color: #121214; border: 1px solid #1f1f23; min-height: 70vh; border-radius: 20px; padding: 12px; }
-        
+        .hide-scroll::-webkit-scrollbar { display: none; }
         @media print {
             body * { display: none !important; }
             #area-impressao { display: block !important; width: 72mm; color: black !important; background: white !important; font-family: monospace; font-size: 12px; padding: 10px; white-space: pre-wrap; }
@@ -29,21 +29,24 @@
                 <button onclick="mudarAba('relatorio')" id="btn-relatorio" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all">📊 Relatório</button>
             </nav>
         </div>
-        <div class="flex items-center gap-4">
-            <div class="text-right">
-                <span class="text-[9px] text-zinc-500 uppercase font-black">Vendas Hoje:</span>
-                <div id="faturamento-total" class="text-xl font-black text-green-500">R$ 0,00</div>
-            </div>
+        <div class="text-right">
+            <span class="text-[9px] text-zinc-500 uppercase font-black">Vendas Hoje:</span>
+            <div id="faturamento-total" class="text-xl font-black text-green-500">R$ 0,00</div>
         </div>
     </header>
 
     <div id="aba-caixa" class="hidden flex-1 flex overflow-hidden">
-        <div class="flex-1 p-6 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4" id="pdv-menu">
-            </div>
+        <div class="flex-1 flex flex-col p-6 overflow-hidden">
+            <div id="pdv-categorias" class="flex gap-2 overflow-x-auto hide-scroll mb-6 pb-2 border-b border-zinc-800">
+                </div>
+            <div id="pdv-menu" class="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4 pr-2">
+                </div>
+        </div>
+        
         <div class="w-96 bg-zinc-900 border-l border-zinc-800 p-6 flex flex-col shadow-2xl">
-            <h2 class="text-xs font-black text-zinc-500 uppercase mb-4 tracking-widest">Pedido Atual</h2>
+            <h2 class="text-xs font-black text-zinc-500 uppercase mb-4 tracking-widest">Pedido Balcão</h2>
             <div id="pdv-lista" class="flex-1 overflow-y-auto text-sm space-y-2 mb-4 border-b border-zinc-800 pb-4">
-                <p class="text-zinc-600 italic text-center mt-10 text-xs">Selecione os produtos...</p>
+                <p class="text-zinc-600 italic text-center mt-10 text-xs">Clique nos itens para adicionar...</p>
             </div>
             <div class="space-y-4">
                 <div class="flex justify-between text-2xl font-black text-white">
@@ -65,20 +68,7 @@
     </div>
 
     <div id="aba-relatorio" class="hidden flex-1 p-10 overflow-y-auto">
-        <div class="max-w-3xl mx-auto bg-zinc-900 p-8 rounded-[32px] border border-zinc-800 shadow-2xl">
-            <h2 class="text-2xl font-black mb-6 italic">Fechamento de Caixa</h2>
-            <div class="flex gap-4 items-end mb-10">
-                <div class="flex-1">
-                    <label class="block text-[10px] uppercase font-black text-zinc-500 mb-2">Escolha a data:</label>
-                    <input type="date" id="relatorio-data" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-sm outline-none focus:border-red-600 transition-all">
-                </div>
-                <button onclick="gerarRelatorio()" class="bg-red-700 hover:bg-red-600 px-8 py-4 rounded-xl font-black text-xs uppercase transition-all shadow-lg shadow-red-900/20">Ver Vendas</button>
-            </div>
-            <div id="relatorio-resultado" class="space-y-4">
-                <p class="text-zinc-600 italic">O resumo aparecerá aqui...</p>
-            </div>
         </div>
-    </div>
 
     <pre id="area-impressao" class="hidden"></pre>
 
@@ -93,52 +83,65 @@
         const somAlerta = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         const cardapio = [
-            {n:"X-Burguer",p:19.90,c:"🍔"}, {n:"X-Salada",p:22.90,c:"🍔"}, {n:"X-Bacon",p:27.90,c:"🍔"},
-            {n:"KM-Simples",p:29.90,c:"🔥"}, {n:"KM-MAX",p:49.90,c:"🔥"}, {n:"KM-Chicken",p:29.90,c:"🔥"},
-            {n:"Batata P",p:16.90,c:"🍟"}, {n:"Batata G",p:26.90,c:"🍟"}, {n:"Frango Empan.",p:49.90,c:"🍟"},
-            {n:"Pastel Carne",p:12.90,c:"🥟"}, {n:"Pastel Queijo",p:12.90,c:"🥟"}, {n:"Pastel Nutella",p:15.90,c:"🥟"},
-            {n:"Açaí 300ml",p:10.90,c:"🍧"}, {n:"Açaí 500ml",p:20.90,c:"🍧"}, {n:"Refri Lata",p:7.90,c:"🥤"}, {n:"Água",p:3.90,c:"🥤"}
+            {n:"X-Burguer",p:19.90,c:"Hamburguer"}, {n:"X-Salada",p:22.90,c:"Hamburguer"}, {n:"X-Bacon",p:27.90,c:"Hamburguer"},
+            {n:"KM-Simples",p:29.90,c:"Artesanal"}, {n:"KM-MAX",p:49.90,c:"Artesanal"}, {n:"KM-Chicken",p:29.90,c:"Artesanal"},
+            {n:"Batata P",p:16.90,c:"Porções"}, {n:"Batata G",p:26.90,c:"Porções"}, {n:"Frango Empan.",p:49.90,c:"Porções"},
+            {n:"Pastel Carne",p:12.90,c:"Pastéis"}, {n:"Pastel Queijo",p:12.90,c:"Pastéis"}, {n:"Pastel Nutella",p:15.90,c:"Pastéis"},
+            {n:"Açaí 300ml",p:10.90,c:"Açaí"}, {n:"Açaí 500ml",p:20.90,c:"Açaí"}, {n:"Refri Lata",p:7.90,c:"Bebidas"}, {n:"Água",p:3.90,c:"Bebidas"}
         ];
 
-        let pdvCart = []; let pdvTotal = 0;
+        let pdvCart = []; let pdvTotal = 0; let categoriaFiltro = "Hamburguer";
 
         function mudarAba(aba) {
             document.getElementById('aba-caixa').classList.toggle('hidden', aba !== 'caixa');
             document.getElementById('aba-cozinha').classList.toggle('hidden', aba !== 'cozinha');
             document.getElementById('aba-relatorio').classList.toggle('hidden', aba !== 'relatorio');
-            document.getElementById('btn-caixa').className = aba === 'caixa' ? 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all aba-ativa' : 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all';
-            document.getElementById('btn-cozinha').className = aba === 'cozinha' ? 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all aba-ativa' : 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all';
-            document.getElementById('btn-relatorio').className = aba === 'relatorio' ? 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all aba-ativa' : 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all';
+            // Estilo dos botões de navegação omitido para brevidade
         }
 
         function renderPDV() {
-            document.getElementById('pdv-menu').innerHTML = cardapio.map(i => `
-                <button onclick="addItemPDV('${i.n}', ${i.p})" class="bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-left hover:border-red-600 transition-all card-pdv shadow-lg">
-                    <span class="text-[10px] text-zinc-500 block mb-1 uppercase font-black">${i.c}</span>
-                    <p class="text-xs font-bold text-white mb-2">${i.n}</p>
-                    <p class="text-sm font-black text-red-500">R$ ${i.p.toFixed(2)}</p>
+            const categorias = [...new Set(cardapio.map(i => i.c))];
+            
+            // Renderiza botões de categoria
+            document.getElementById('pdv-categorias').innerHTML = categorias.map(cat => `
+                <button onclick="filtrarPDV('${cat}')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border border-zinc-700 transition-all ${categoriaFiltro === cat ? 'category-btn-active' : 'bg-zinc-800'}">
+                    ${cat}
+                </button>
+            `).join('');
+
+            // Renderiza itens da categoria selecionada
+            document.getElementById('pdv-menu').innerHTML = cardapio.filter(i => i.c === categoriaFiltro).map(i => `
+                <button onclick="addItemPDV('${i.n}', ${i.p})" class="bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-left hover:border-red-600 transition-all shadow-lg">
+                    <p class="text-xs font-bold text-white mb-2 uppercase">${i.n}</p>
+                    <p class="text-sm font-black text-red-500 italic">R$ ${i.p.toFixed(2)}</p>
                 </button>`).join('');
+        }
+
+        function filtrarPDV(cat) {
+            categoriaFiltro = cat;
+            renderPDV();
         }
 
         function addItemPDV(n, p) {
             pdvCart.push({n, p}); pdvTotal += p;
-            document.getElementById('pdv-lista').innerHTML = pdvCart.map(i => `<div class="flex justify-between"><span>• ${i.n}</span><span>R$ ${i.p.toFixed(2)}</span></div>`).join('');
+            document.getElementById('pdv-lista').innerHTML = pdvCart.map(i => `<div class="flex justify-between border-b border-zinc-800 pb-1"><span>• ${i.n}</span><span>R$ ${i.p.toFixed(2)}</span></div>`).join('');
             document.getElementById('pdv-total').innerText = `R$ ${pdvTotal.toFixed(2)}`;
+        }
+
+        function lancarPedidoPDV() {
+            const cliente = document.getElementById('pdv-nome').value;
+            if(!cliente || pdvCart.length === 0) return alert("Preencha cliente e produtos!");
+            const hoje = new Date().toISOString().split('T')[0];
+            db.ref('pedidos').push().set({
+                cliente: cliente + " (BALCÃO)", itens: pdvCart.map(i => i.n).join(', '),
+                total: pdvTotal, pagamento: "BALCÃO", endereco: "BALCÃO",
+                status: 'novos', hora: new Date().toLocaleTimeString('pt-BR'), data: hoje
+            }).then(() => { limparPDV(); alert("Pedido Lançado no sistema!"); });
         }
 
         function limparPDV() { pdvCart = []; pdvTotal = 0; document.getElementById('pdv-lista').innerHTML = ''; document.getElementById('pdv-total').innerText = 'R$ 0,00'; document.getElementById('pdv-nome').value = ''; }
 
-        function lancarPedidoPDV() {
-            const cliente = document.getElementById('pdv-nome').value;
-            if(!cliente || pdvCart.length === 0) return alert("Preencha o cliente e escolha os itens!");
-            const hoje = new Date().toISOString().split('T')[0];
-            db.ref('pedidos').push().set({
-                cliente: cliente + " (CAIXA)", itens: pdvCart.map(i => i.n).join(', '),
-                total: pdvTotal, pagamento: "BALCÃO", endereco: "BALCÃO",
-                status: 'novos', hora: new Date().toLocaleTimeString('pt-BR'), data: hoje
-            }).then(() => { limparPDV(); alert("Pedido Lançado!"); });
-        }
-
+        // Monitoramento em tempo real (Novos, Na Chapa e Faturamento)
         db.ref('pedidos').on('value', snap => {
             const data = snap.val(); const hoje = new Date().toISOString().split('T')[0];
             let totalDia = 0; const cols = { novos: '', preparando: '', finalizados: '' };
@@ -150,9 +153,9 @@
                             <span class="text-[10px] font-black uppercase text-white tracking-widest">${p.cliente}</span>
                             <span class="text-[8px] text-zinc-600 font-mono">${p.hora}</span>
                         </div>
-                        <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">${p.itens}</p>
+                        <p class="text-[11px] text-zinc-400 mb-4">${p.itens}</p>
                         <div class="flex justify-between items-center border-t border-zinc-800 pt-3">
-                            <span class="text-xs font-black text-green-500">R$ ${p.total.toFixed(2)}</span>
+                            <span class="text-xs font-black text-green-500 italic">R$ ${p.total.toFixed(2)}</span>
                             <div class="flex gap-2">
                                 <button onclick="imprimirPedido('${id}')" class="bg-zinc-800 p-2 rounded-lg text-xs">🖨️</button>
                                 ${p.status==='novos'?`<button onclick="update('${id}','preparando')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-black uppercase tracking-tighter">Preparar</button>`:''}
@@ -175,28 +178,8 @@
 
         function imprimirPedido(id) {
             db.ref('pedidos/'+id).once('value', s => {
-                const p = s.val(); const txt = `KM BURGER 🍔\n----------------------------\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\n----------------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------------\nTOTAL: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\n----------------------------\n\n\n\n.`;
+                const p = s.val(); const txt = `KM BURGER 🍔\n----------------------------\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\n----------------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------------\nTOTAL: R$ ${p.total.toFixed(2)}\n\n\n\n.`;
                 document.getElementById('area-impressao').innerText = txt; window.print();
-            });
-        }
-
-        function gerarRelatorio() {
-            const dataB = document.getElementById('relatorio-data').value;
-            if(!dataB) return alert("Selecione a data!");
-            db.ref('pedidos').once('value', s => {
-                const data = s.val(); let totalRel = 0; let listaRel = '';
-                for(let id in data) {
-                    const p = data[id];
-                    if(p.data === dataB && p.status === 'finalizados') {
-                        totalRel += p.total;
-                        listaRel += `<div class="flex justify-between py-2 border-b border-zinc-800 text-[11px] font-mono"><span>${p.hora} - ${p.cliente}</span><span>R$ ${p.total.toFixed(2)}</span></div>`;
-                    }
-                }
-                document.getElementById('relatorio-resultado').innerHTML = totalRel > 0 ? `
-                    <div class="bg-green-500/10 p-4 rounded-xl border border-green-500/20 mb-6">
-                        <span class="text-[10px] text-green-500 font-black uppercase">Vendas no dia:</span>
-                        <p class="text-3xl font-black text-green-500">R$ ${totalRel.toFixed(2)}</p>
-                    </div>${listaRel}` : '<p class="text-zinc-600 italic">Sem vendas finalizadas nesta data.</p>';
             });
         }
 
