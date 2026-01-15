@@ -2,14 +2,15 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>KM BURGER PRO - Gestão Total</title>
+    <title>KM BURGER - Central de Comando</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         body { background-color: #09090b; color: #e4e4e7; font-family: 'Inter', sans-serif; }
+        .aba-ativa { background-color: #b91c1c !important; color: white !important; }
+        .card-pdv:active { transform: scale(0.95); }
         .column-bg { background-color: #121214; border: 1px solid #1f1f23; min-height: 70vh; border-radius: 20px; padding: 12px; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
         
         @media print {
             body * { display: none !important; }
@@ -17,58 +18,64 @@
         }
     </style>
 </head>
-<body class="flex flex-col h-screen">
+<body class="flex flex-col h-screen overflow-hidden">
 
     <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-2xl">
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-6">
             <h1 class="text-xl font-black italic text-red-600 tracking-tighter">KM BURGER PRO</h1>
-            <nav class="flex gap-2">
-                <button onclick="mudarAba('gestao')" class="bg-zinc-800 px-3 py-1 rounded-lg text-[10px] font-bold uppercase hover:bg-zinc-700">Pedidos</button>
-                <button onclick="mudarAba('relatorios')" class="bg-zinc-800 px-3 py-1 rounded-lg text-[10px] font-bold uppercase hover:bg-zinc-700">Relatórios</button>
+            <nav class="flex bg-zinc-800 rounded-xl p-1">
+                <button onclick="mudarAba('caixa')" id="btn-caixa" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all">🛒 Caixa</button>
+                <button onclick="mudarAba('cozinha')" id="btn-cozinha" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all">🔥 Cozinha</button>
+                <button onclick="mudarAba('relatorio')" id="btn-relatorio" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all">📊 Relatório</button>
             </nav>
         </div>
-        <div class="text-right">
-            <span class="text-[10px] text-zinc-500 uppercase font-bold">Hoje:</span>
-            <div id="faturamento-hoje" class="text-xl font-black text-green-500 italic">R$ 0,00</div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <span class="text-[9px] text-zinc-500 uppercase font-black">Vendas Hoje:</span>
+                <div id="faturamento-total" class="text-xl font-black text-green-500">R$ 0,00</div>
+            </div>
         </div>
     </header>
 
-    <div id="aba-gestao" class="flex flex-1 overflow-hidden">
-        <aside class="w-80 bg-zinc-900 border-r border-zinc-800 p-4 flex flex-col shadow-xl">
-            <h2 class="text-[10px] font-black text-zinc-500 uppercase mb-4 tracking-widest">🛒 CAIXA RÁPIDO</h2>
-            <div id="pdv-itens" class="flex-1 overflow-y-auto hide-scroll space-y-2 mb-4"></div>
-            <div class="bg-zinc-800 rounded-2xl p-4 border border-zinc-700">
-                <div id="pdv-lista" class="text-[10px] text-zinc-500 mb-3 space-y-1"></div>
-                <div class="flex justify-between font-black text-white mb-4 border-t border-zinc-700 pt-2">
+    <div id="aba-caixa" class="hidden flex-1 flex overflow-hidden">
+        <div class="flex-1 p-6 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4" id="pdv-menu">
+            </div>
+        <div class="w-96 bg-zinc-900 border-l border-zinc-800 p-6 flex flex-col shadow-2xl">
+            <h2 class="text-xs font-black text-zinc-500 uppercase mb-4 tracking-widest">Pedido Atual</h2>
+            <div id="pdv-lista" class="flex-1 overflow-y-auto text-sm space-y-2 mb-4 border-b border-zinc-800 pb-4">
+                <p class="text-zinc-600 italic text-center mt-10 text-xs">Selecione os produtos...</p>
+            </div>
+            <div class="space-y-4">
+                <div class="flex justify-between text-2xl font-black text-white">
                     <span>TOTAL:</span><span id="pdv-total">R$ 0,00</span>
                 </div>
-                <input type="text" id="pdv-nome" placeholder="Nome Cliente" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-3 text-xs mb-2 outline-none">
-                <button onclick="lancarPDV()" class="w-full bg-red-700 hover:bg-red-600 text-white font-black py-3 rounded-xl text-xs uppercase shadow-lg">Lançar Agora</button>
+                <input type="text" id="pdv-nome" placeholder="Nome do Cliente" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 outline-none focus:border-red-600 transition-all text-sm">
+                <button onclick="lancarPedidoPDV()" class="w-full bg-red-700 hover:bg-red-600 text-white font-black py-5 rounded-2xl text-sm uppercase shadow-xl transition-all active:scale-95">Lançar no Sistema</button>
+                <button onclick="limparPDV()" class="w-full text-zinc-600 text-[10px] font-bold uppercase hover:text-white">Limpar Tudo</button>
             </div>
-        </aside>
-
-        <main class="flex-1 p-6 overflow-y-auto hide-scroll">
-            <div class="grid grid-cols-3 gap-6">
-                <div><h3 class="text-center text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-4">Novos</h3><div id="col-novos" class="column-bg space-y-3"></div></div>
-                <div><h3 class="text-center text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-4">Na Chapa</h3><div id="col-preparando" class="column-bg space-y-3"></div></div>
-                <div><h3 class="text-center text-[10px] font-black text-green-500 uppercase tracking-[0.2em] mb-4">Finalizados</h3><div id="col-finalizados" class="column-bg space-y-3 opacity-40"></div></div>
-            </div>
-        </main>
+        </div>
     </div>
 
-    <div id="aba-relatorios" class="hidden flex-1 p-8 overflow-y-auto">
-        <div class="max-w-4xl mx-auto">
-            <h2 class="text-2xl font-black mb-6">Histórico de Vendas</h2>
-            <div class="bg-zinc-900 p-6 rounded-3xl border border-zinc-800 shadow-xl flex gap-4 items-end mb-8">
-                <div>
-                    <label class="block text-[10px] uppercase font-bold text-zinc-500 mb-1">Selecionar Data:</label>
-                    <input type="date" id="busca-data" class="bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm outline-none">
+    <div id="aba-cozinha" class="hidden flex-1 p-6 overflow-y-auto">
+        <div class="grid grid-cols-3 gap-6">
+            <div><h3 class="text-center text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4">🆕 Novos</h3><div id="col-novos" class="column-bg space-y-3"></div></div>
+            <div><h3 class="text-center text-[10px] font-black text-blue-500 uppercase tracking-widest mb-4">🔥 Na Chapa</h3><div id="col-preparando" class="column-bg space-y-3"></div></div>
+            <div><h3 class="text-center text-[10px] font-black text-green-500 uppercase tracking-widest mb-4">✅ Concluídos (Hoje)</h3><div id="col-finalizados" class="column-bg space-y-3 opacity-50"></div></div>
+        </div>
+    </div>
+
+    <div id="aba-relatorio" class="hidden flex-1 p-10 overflow-y-auto">
+        <div class="max-w-3xl mx-auto bg-zinc-900 p-8 rounded-[32px] border border-zinc-800 shadow-2xl">
+            <h2 class="text-2xl font-black mb-6 italic">Fechamento de Caixa</h2>
+            <div class="flex gap-4 items-end mb-10">
+                <div class="flex-1">
+                    <label class="block text-[10px] uppercase font-black text-zinc-500 mb-2">Escolha a data:</label>
+                    <input type="date" id="relatorio-data" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-sm outline-none focus:border-red-600 transition-all">
                 </div>
-                <button onclick="gerarRelatorio()" class="bg-red-700 px-6 py-3 rounded-xl font-bold text-sm">Gerar Relatório</button>
-                <button onclick="imprimirRelatorio()" class="bg-zinc-700 px-6 py-3 rounded-xl font-bold text-sm">Imprimir Fechamento</button>
+                <button onclick="gerarRelatorio()" class="bg-red-700 hover:bg-red-600 px-8 py-4 rounded-xl font-black text-xs uppercase transition-all shadow-lg shadow-red-900/20">Ver Vendas</button>
             </div>
-            <div id="resultado-relatorio" class="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 min-h-[400px]">
-                <p class="text-zinc-600 italic">Selecione uma data para ver o desempenho...</p>
+            <div id="relatorio-resultado" class="space-y-4">
+                <p class="text-zinc-600 italic">O resumo aparecerá aqui...</p>
             </div>
         </div>
     </div>
@@ -86,92 +93,114 @@
         const somAlerta = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
         const cardapio = [
-            {n:"X-Burguer",p:19.90},{n:"X-Salada",p:22.90},{n:"KM-Simples",p:29.90},
-            {n:"KM-MAX",p:49.90},{n:"Batata G",p:26.90},{n:"Açaí 500ml",p:20.90}
+            {n:"X-Burguer",p:19.90,c:"🍔"}, {n:"X-Salada",p:22.90,c:"🍔"}, {n:"X-Bacon",p:27.90,c:"🍔"},
+            {n:"KM-Simples",p:29.90,c:"🔥"}, {n:"KM-MAX",p:49.90,c:"🔥"}, {n:"KM-Chicken",p:29.90,c:"🔥"},
+            {n:"Batata P",p:16.90,c:"🍟"}, {n:"Batata G",p:26.90,c:"🍟"}, {n:"Frango Empan.",p:49.90,c:"🍟"},
+            {n:"Pastel Carne",p:12.90,c:"🥟"}, {n:"Pastel Queijo",p:12.90,c:"🥟"}, {n:"Pastel Nutella",p:15.90,c:"🥟"},
+            {n:"Açaí 300ml",p:10.90,c:"🍧"}, {n:"Açaí 500ml",p:20.90,c:"🍧"}, {n:"Refri Lata",p:7.90,c:"🥤"}, {n:"Água",p:3.90,c:"🥤"}
         ];
 
-        let cart = []; let cartTotal = 0;
+        let pdvCart = []; let pdvTotal = 0;
 
         function mudarAba(aba) {
-            document.getElementById('aba-gestao').classList.toggle('hidden', aba !== 'gestao');
-            document.getElementById('aba-relatorios').classList.toggle('hidden', aba !== 'relatorios');
+            document.getElementById('aba-caixa').classList.toggle('hidden', aba !== 'caixa');
+            document.getElementById('aba-cozinha').classList.toggle('hidden', aba !== 'cozinha');
+            document.getElementById('aba-relatorio').classList.toggle('hidden', aba !== 'relatorio');
+            document.getElementById('btn-caixa').className = aba === 'caixa' ? 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all aba-ativa' : 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all';
+            document.getElementById('btn-cozinha').className = aba === 'cozinha' ? 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all aba-ativa' : 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all';
+            document.getElementById('btn-relatorio').className = aba === 'relatorio' ? 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all aba-ativa' : 'px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all';
         }
 
         function renderPDV() {
-            document.getElementById('pdv-itens').innerHTML = cardapio.map(i => `
-                <button onclick="addItemPDV('${i.n}', ${i.p})" class="w-full bg-zinc-800/50 border border-zinc-700 p-3 rounded-xl text-left hover:border-red-600 transition flex justify-between">
-                    <span class="text-xs font-bold">${i.n}</span><span class="text-xs text-red-500">R$ ${i.p.toFixed(2)}</span>
+            document.getElementById('pdv-menu').innerHTML = cardapio.map(i => `
+                <button onclick="addItemPDV('${i.n}', ${i.p})" class="bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-left hover:border-red-600 transition-all card-pdv shadow-lg">
+                    <span class="text-[10px] text-zinc-500 block mb-1 uppercase font-black">${i.c}</span>
+                    <p class="text-xs font-bold text-white mb-2">${i.n}</p>
+                    <p class="text-sm font-black text-red-500">R$ ${i.p.toFixed(2)}</p>
                 </button>`).join('');
         }
 
-        function addItemPDV(n, p) { cart.push({n,p}); cartTotal += p; document.getElementById('pdv-lista').innerHTML = cart.map(i=>`• ${i.n}`).join('<br>'); document.getElementById('pdv-total').innerText = `R$ ${cartTotal.toFixed(2)}`; }
-
-        function lancarPDV() {
-            const cliente = document.getElementById('pdv-nome').value;
-            if(!cliente || cart.length === 0) return alert("Preencha cliente e itens!");
-            const dataAtual = new Date().toISOString().split('T')[0];
-            db.ref('pedidos').push().set({
-                cliente: cliente + " (BALCÃO)", itens: cart.map(i=>i.n).join(', '),
-                total: cartTotal, pagamento: "CAIXA", endereco: "BALCÃO",
-                status: 'novos', hora: new Date().toLocaleTimeString('pt-BR'), data: dataAtual
-            }).then(() => { cart = []; cartTotal = 0; document.getElementById('pdv-nome').value=""; document.getElementById('pdv-lista').innerText=""; document.getElementById('pdv-total').innerText="R$ 0,00"; });
+        function addItemPDV(n, p) {
+            pdvCart.push({n, p}); pdvTotal += p;
+            document.getElementById('pdv-lista').innerHTML = pdvCart.map(i => `<div class="flex justify-between"><span>• ${i.n}</span><span>R$ ${i.p.toFixed(2)}</span></div>`).join('');
+            document.getElementById('pdv-total').innerText = `R$ ${pdvTotal.toFixed(2)}`;
         }
 
-        db.ref('pedidos').on('value', (snap) => {
+        function limparPDV() { pdvCart = []; pdvTotal = 0; document.getElementById('pdv-lista').innerHTML = ''; document.getElementById('pdv-total').innerText = 'R$ 0,00'; document.getElementById('pdv-nome').value = ''; }
+
+        function lancarPedidoPDV() {
+            const cliente = document.getElementById('pdv-nome').value;
+            if(!cliente || pdvCart.length === 0) return alert("Preencha o cliente e escolha os itens!");
+            const hoje = new Date().toISOString().split('T')[0];
+            db.ref('pedidos').push().set({
+                cliente: cliente + " (CAIXA)", itens: pdvCart.map(i => i.n).join(', '),
+                total: pdvTotal, pagamento: "BALCÃO", endereco: "BALCÃO",
+                status: 'novos', hora: new Date().toLocaleTimeString('pt-BR'), data: hoje
+            }).then(() => { limparPDV(); alert("Pedido Lançado!"); });
+        }
+
+        db.ref('pedidos').on('value', snap => {
             const data = snap.val(); const hoje = new Date().toISOString().split('T')[0];
-            let fatHoje = 0; const cols = { novos: '', preparando: '', finalizados: '' };
+            let totalDia = 0; const cols = { novos: '', preparando: '', finalizados: '' };
             for(let id in data) {
                 const p = data[id];
-                const card = `<div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${p.status==='novos'?'border-orange-500':'border-blue-500'} mb-3">
-                    <p class="text-[10px] font-black uppercase text-zinc-300">${p.cliente}</p>
-                    <p class="text-[11px] text-zinc-400 my-2">${p.itens}</p>
-                    <div class="flex justify-between items-center pt-2 border-t border-zinc-800">
-                        <span class="text-xs font-black text-green-500">R$ ${p.total.toFixed(2)}</span>
-                        <div class="flex gap-2">
-                            <button onclick="imprimirPedido('${id}')" class="bg-zinc-800 p-2 rounded-lg">🖨️</button>
-                            ${p.status==='novos'?`<button onclick="update('${id}','preparando')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-bold">COZINHA</button>`:''}
-                            ${p.status==='preparando'?`<button onclick="update('${id}','finalizados')" class="bg-green-600 px-3 py-1 rounded text-[10px] font-bold">FIM</button>`:''}
+                const card = `
+                    <div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${p.status==='novos'?'border-orange-500':'border-blue-500'} shadow-xl mb-3">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-black uppercase text-white tracking-widest">${p.cliente}</span>
+                            <span class="text-[8px] text-zinc-600 font-mono">${p.hora}</span>
                         </div>
-                    </div></div>`;
-                if(p.data === hoje && p.status === 'finalizados') fatHoje += p.total;
+                        <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">${p.itens}</p>
+                        <div class="flex justify-between items-center border-t border-zinc-800 pt-3">
+                            <span class="text-xs font-black text-green-500">R$ ${p.total.toFixed(2)}</span>
+                            <div class="flex gap-2">
+                                <button onclick="imprimirPedido('${id}')" class="bg-zinc-800 p-2 rounded-lg text-xs">🖨️</button>
+                                ${p.status==='novos'?`<button onclick="update('${id}','preparando')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-black uppercase tracking-tighter">Preparar</button>`:''}
+                                ${p.status==='preparando'?`<button onclick="update('${id}','finalizados')" class="bg-green-600 px-3 py-1 rounded text-[10px] font-black uppercase tracking-tighter">Finalizar</button>`:''}
+                            </div>
+                        </div>
+                    </div>`;
+                if(p.data === hoje && p.status === 'finalizados') totalDia += p.total;
                 if(p.status !== 'finalizados' || p.data === hoje) cols[p.status] += card;
             }
             document.getElementById('col-novos').innerHTML = cols.novos;
             document.getElementById('col-preparando').innerHTML = cols.preparando;
             document.getElementById('col-finalizados').innerHTML = cols.finalizados;
-            document.getElementById('faturamento-hoje').innerText = `R$ ${fatHoje.toFixed(2)}`;
+            document.getElementById('faturamento-total').innerText = `R$ ${totalDia.toFixed(2)}`;
         });
+
+        db.ref('pedidos').on('child_added', s => { if(s.val().status === 'novos') somAlerta.play().catch(e => {}); });
 
         function update(id, st) { db.ref('pedidos/'+id).update({status: st}); }
 
         function imprimirPedido(id) {
             db.ref('pedidos/'+id).once('value', s => {
-                const p = s.val(); const txt = `KM BURGER\n----------------\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\n----------------\nITENS:\n${p.itens}\n----------------\nTOTAL: R$ ${p.total.toFixed(2)}\n\n\n\n.`;
+                const p = s.val(); const txt = `KM BURGER 🍔\n----------------------------\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\n----------------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------------\nTOTAL: R$ ${p.total.toFixed(2)}\nPAGTO: ${p.pagamento}\n----------------------------\n\n\n\n.`;
                 document.getElementById('area-impressao').innerText = txt; window.print();
             });
         }
 
-        let relatorioGlobal = "";
         function gerarRelatorio() {
-            const dataBusca = document.getElementById('busca-data').value;
-            if(!dataBusca) return alert("Escolha uma data!");
+            const dataB = document.getElementById('relatorio-data').value;
+            if(!dataB) return alert("Selecione a data!");
             db.ref('pedidos').once('value', s => {
-                const pedidos = s.val(); let total = 0; let lista = "";
-                for(let id in pedidos) {
-                    const p = pedidos[id];
-                    if(p.data === dataBusca && p.status === 'finalizados') {
-                        total += p.total; lista += `<div class="flex justify-between border-b border-zinc-800 py-2 text-xs"><span>${p.hora} - ${p.cliente}</span><span>R$ ${p.total.toFixed(2)}</span></div>`;
+                const data = s.val(); let totalRel = 0; let listaRel = '';
+                for(let id in data) {
+                    const p = data[id];
+                    if(p.data === dataB && p.status === 'finalizados') {
+                        totalRel += p.total;
+                        listaRel += `<div class="flex justify-between py-2 border-b border-zinc-800 text-[11px] font-mono"><span>${p.hora} - ${p.cliente}</span><span>R$ ${p.total.toFixed(2)}</span></div>`;
                     }
                 }
-                const res = `<div><h3 class="text-xl font-bold mb-4 text-green-500">TOTAL DO DIA: R$ ${total.toFixed(2)}</h3>${lista}</div>`;
-                document.getElementById('resultado-relatorio').innerHTML = total > 0 ? res : "<p>Nenhuma venda finalizada nesta data.</p>";
-                relatorioGlobal = `FECHAMENTO KM BURGER\nDATA: ${dataBusca}\n----------------\nTOTAL: R$ ${total.toFixed(2)}\n----------------\nDETALHES:\n` + (total > 0 ? "Vendas processadas com sucesso." : "Sem vendas.");
+                document.getElementById('relatorio-resultado').innerHTML = totalRel > 0 ? `
+                    <div class="bg-green-500/10 p-4 rounded-xl border border-green-500/20 mb-6">
+                        <span class="text-[10px] text-green-500 font-black uppercase">Vendas no dia:</span>
+                        <p class="text-3xl font-black text-green-500">R$ ${totalRel.toFixed(2)}</p>
+                    </div>${listaRel}` : '<p class="text-zinc-600 italic">Sem vendas finalizadas nesta data.</p>';
             });
         }
 
-        function imprimirRelatorio() { if(!relatorioGlobal) return alert("Gere o relatório primeiro!"); document.getElementById('area-impressao').innerText = relatorioGlobal + "\n\n\n\n."; window.print(); }
-
-        renderPDV(); mudarAba('gestao');
+        renderPDV(); mudarAba('caixa');
     </script>
 </body>
 </html>
