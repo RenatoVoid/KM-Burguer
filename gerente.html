@@ -2,75 +2,82 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>KM BURGER - Central PRO</title>
+    <title>KM BURGER - Central de Comando</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { background-color: #09090b; color: #e4e4e7; font-family: 'Inter', sans-serif; }
-        .aba-ativa { background-color: #b91c1c !important; color: white !important; }
-        .category-btn-active { background-color: #ef4444; color: white; }
+        body { background-color: #0f0f12; color: #e4e4e7; font-family: 'Inter', sans-serif; }
+        .bg-km-vinho { background-color: #4a0404; }
+        .text-km-amarelo { color: #f59e0b; }
+        .aba-ativa { background-color: #4a0404 !important; color: #f59e0b !important; border: 1px solid #f59e0b; }
         .column-bg { background-color: #121214; border: 1px solid #1f1f23; min-height: 70vh; border-radius: 20px; padding: 12px; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
         @media print {
             body * { display: none !important; }
-            #area-impressao { display: block !important; width: 72mm; color: black !important; background: white !important; font-family: monospace; font-size: 12px; padding: 10px; white-space: pre-wrap; }
+            #area-print { display: block !important; width: 72mm; color: black !important; font-family: monospace; font-size: 12px; padding: 10px; white-space: pre-wrap; }
         }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
-    <header class="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center shadow-2xl">
+    <header class="bg-km-vinho border-b border-yellow-600/30 p-4 flex justify-between items-center shadow-2xl">
         <div class="flex items-center gap-6">
-            <h1 class="text-xl font-black italic text-red-600 tracking-tighter">KM BURGER PRO</h1>
-            <nav class="flex bg-zinc-800 rounded-xl p-1">
-                <button onclick="mudarAba('caixa')" id="btn-caixa" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all">🛒 Caixa</button>
-                <button onclick="mudarAba('cozinha')" id="btn-cozinha" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all">🔥 Cozinha</button>
-                <button onclick="mudarAba('relatorio')" id="btn-relatorio" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all">📊 Relatório</button>
+            <h1 class="text-2xl font-black italic text-km-amarelo tracking-tighter">KM BURGER PRO</h1>
+            <nav class="flex bg-black/20 rounded-xl p-1 gap-1">
+                <button onclick="mudar('caixa')" id="b-caixa" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-white/50">🛒 Caixa</button>
+                <button onclick="mudar('cozinha')" id="b-cozinha" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-white/50">🔥 Cozinha</button>
+                <button onclick="mudar('relatorio')" id="b-relatorio" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-white/50">📊 Relatório</button>
             </nav>
         </div>
         <div class="text-right">
-            <span class="text-[9px] text-zinc-500 uppercase font-black">Vendas Hoje:</span>
-            <div id="faturamento-total" class="text-xl font-black text-green-500">R$ 0,00</div>
+            <span class="text-[9px] text-km-amarelo font-black uppercase">Faturamento Hoje:</span>
+            <div id="fat-hoje" class="text-xl font-black text-green-500">R$ 0,00</div>
         </div>
     </header>
 
     <div id="aba-caixa" class="hidden flex-1 flex overflow-hidden">
         <div class="flex-1 flex flex-col p-6 overflow-hidden">
-            <div id="pdv-categorias" class="flex gap-2 overflow-x-auto hide-scroll mb-6 pb-2 border-b border-zinc-800">
-                </div>
-            <div id="pdv-menu" class="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4 pr-2">
-                </div>
+            <div id="pdv-cats" class="flex gap-2 overflow-x-auto mb-6 pb-2 border-b border-zinc-800 no-scrollbar"></div>
+            <div id="pdv-grid" class="flex-1 overflow-y-auto grid grid-cols-2 md:grid-cols-4 gap-4 pr-2"></div>
         </div>
-        
-        <div class="w-96 bg-zinc-900 border-l border-zinc-800 p-6 flex flex-col shadow-2xl">
-            <h2 class="text-xs font-black text-zinc-500 uppercase mb-4 tracking-widest">Pedido Balcão</h2>
-            <div id="pdv-lista" class="flex-1 overflow-y-auto text-sm space-y-2 mb-4 border-b border-zinc-800 pb-4">
-                <p class="text-zinc-600 italic text-center mt-10 text-xs">Clique nos itens para adicionar...</p>
-            </div>
+        <div class="w-96 bg-zinc-900 border-l border-zinc-800 p-6 flex flex-col">
+            <h2 class="text-xs font-black text-km-amarelo uppercase mb-4 tracking-widest">Pedido Balcão</h2>
+            <div id="pdv-list" class="flex-1 overflow-y-auto text-sm space-y-2 mb-4 border-b border-zinc-800 pb-4 no-scrollbar"></div>
             <div class="space-y-4">
-                <div class="flex justify-between text-2xl font-black text-white">
-                    <span>TOTAL:</span><span id="pdv-total">R$ 0,00</span>
-                </div>
-                <input type="text" id="pdv-nome" placeholder="Nome do Cliente" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 outline-none focus:border-red-600 transition-all text-sm">
-                <button onclick="lancarPedidoPDV()" class="w-full bg-red-700 hover:bg-red-600 text-white font-black py-5 rounded-2xl text-sm uppercase shadow-xl transition-all active:scale-95">Lançar no Sistema</button>
-                <button onclick="limparPDV()" class="w-full text-zinc-600 text-[10px] font-bold uppercase hover:text-white">Limpar Tudo</button>
+                <div class="flex justify-between text-2xl font-black text-white"><span>TOTAL:</span><span id="pdv-total">R$ 0,00</span></div>
+                <input type="text" id="pdv-nome" placeholder="Nome do Cliente" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-sm text-white outline-none focus:border-km-vinho">
+                <button onclick="enviarPDV()" class="w-full bg-km-vinho text-km-amarelo font-black py-5 rounded-2xl text-sm uppercase shadow-xl transition-all active:scale-95">Lançar Pedido</button>
             </div>
         </div>
     </div>
 
     <div id="aba-cozinha" class="hidden flex-1 p-6 overflow-y-auto">
         <div class="grid grid-cols-3 gap-6">
-            <div><h3 class="text-center text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4">🆕 Novos</h3><div id="col-novos" class="column-bg space-y-3"></div></div>
-            <div><h3 class="text-center text-[10px] font-black text-blue-500 uppercase tracking-widest mb-4">🔥 Na Chapa</h3><div id="col-preparando" class="column-bg space-y-3"></div></div>
-            <div><h3 class="text-center text-[10px] font-black text-green-500 uppercase tracking-widest mb-4">✅ Concluídos (Hoje)</h3><div id="col-finalizados" class="column-bg space-y-3 opacity-50"></div></div>
+            <div><h3 class="text-center text-[10px] font-black text-orange-500 uppercase mb-4 tracking-widest">🆕 Novos</h3><div id="col-novos" class="column-bg space-y-3"></div></div>
+            <div><h3 class="text-center text-[10px] font-black text-blue-500 uppercase mb-4 tracking-widest">🔥 Na Chapa</h3><div id="col-preparando" class="column-bg space-y-3"></div></div>
+            <div><h3 class="text-center text-[10px] font-black text-green-500 uppercase mb-4 tracking-widest">✅ Hoje</h3><div id="col-finalizados" class="column-bg space-y-3 opacity-40"></div></div>
         </div>
     </div>
 
     <div id="aba-relatorio" class="hidden flex-1 p-10 overflow-y-auto">
+        <div class="max-w-3xl mx-auto bg-zinc-900 p-8 rounded-[32px] border border-zinc-800 shadow-2xl">
+            <h2 class="text-2xl font-black mb-6 italic text-km-amarelo">Fechamento de Caixa</h2>
+            <div class="flex gap-4 items-end mb-10">
+                <div class="flex-1">
+                    <label class="block text-[10px] font-black text-zinc-500 mb-2 uppercase tracking-widest">Data do Fechamento:</label>
+                    <input type="date" id="rel-data" class="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-sm text-white outline-none">
+                </div>
+                <button onclick="gerarRel()" class="bg-km-vinho text-km-amarelo px-8 py-4 rounded-xl font-black text-xs uppercase shadow-lg">Ver Vendas</button>
+            </div>
+            <div id="rel-resultado" class="space-y-4">
+                <p class="text-zinc-600 italic text-center py-10">O resumo das vendas aparecerá aqui...</p>
+            </div>
         </div>
+    </div>
 
-    <pre id="area-impressao" class="hidden"></pre>
+    <pre id="area-print" class="hidden"></pre>
 
     <script>
         const firebaseConfig = {
@@ -80,110 +87,118 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const somAlerta = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        const som = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
 
+        // CARDÁPIO COMPLETO PARA O CAIXA
         const cardapio = [
-            {n:"X-Burguer",p:19.90,c:"Hamburguer"}, {n:"X-Salada",p:22.90,c:"Hamburguer"}, {n:"X-Bacon",p:27.90,c:"Hamburguer"},
-            {n:"KM-Simples",p:29.90,c:"Artesanal"}, {n:"KM-MAX",p:49.90,c:"Artesanal"}, {n:"KM-Chicken",p:29.90,c:"Artesanal"},
-            {n:"Batata P",p:16.90,c:"Porções"}, {n:"Batata G",p:26.90,c:"Porções"}, {n:"Frango Empan.",p:49.90,c:"Porções"},
-            {n:"Pastel Carne",p:12.90,c:"Pastéis"}, {n:"Pastel Queijo",p:12.90,c:"Pastéis"}, {n:"Pastel Nutella",p:15.90,c:"Pastéis"},
-            {n:"Açaí 300ml",p:10.90,c:"Açaí"}, {n:"Açaí 500ml",p:20.90,c:"Açaí"}, {n:"Refri Lata",p:7.90,c:"Bebidas"}, {n:"Água",p:3.90,c:"Bebidas"}
+            { n: "X-Burguer", p: 19.90, c: "Hamburguer" }, { n: "X-Salada", p: 22.90, c: "Hamburguer" }, { n: "X-Bacon", p: 27.90, c: "Hamburguer" }, { n: "X-Calabresa", p: 24.90, c: "Hamburguer" }, { n: "X-Egg", p: 24.90, c: "Hamburguer" }, { n: "X-Tudo", p: 39.90, c: "Hamburguer" },
+            { n: "KM-Simples", p: 29.90, c: "Artesanal" }, { n: "KM-Salada", p: 33.90, c: "Artesanal" }, { n: "KM-Bacon", p: 37.90, c: "Artesanal" }, { n: "KM-MAX", p: 49.90, c: "Artesanal" }, { n: "KM-Chicken", p: 29.90, c: "Artesanal" },
+            { n: "Batata P", p: 16.90, c: "Porções" }, { n: "Batata G", p: 26.90, c: "Porções" }, { n: "Frango Empan.", p: 49.90, c: "Porções" }, { n: "Chapa Mix", p: 159.90, c: "Porções" },
+            { n: "Pastel Carne", p: 12.90, c: "Pastéis" }, { n: "Pastel Queijo", p: 12.90, c: "Pastéis" }, { n: "Pastel Nutella", p: 15.90, c: "Pastéis" },
+            { n: "Açaí 300ml", p: 10.90, c: "Açaí" }, { n: "Açaí 500ml", p: 20.90, c: "Açaí" },
+            { n: "Refri Lata", p: 7.90, c: "Bebidas" }, { n: "Suco Lata", p: 7.90, c: "Bebidas" }, { n: "Água", p: 3.90, c: "Bebidas" }
         ];
 
-        let pdvCart = []; let pdvTotal = 0; let categoriaFiltro = "Hamburguer";
+        let catAtiva = "Hamburguer"; let pdvCart = []; let pdvTotal = 0;
 
-        function mudarAba(aba) {
-            document.getElementById('aba-caixa').classList.toggle('hidden', aba !== 'caixa');
-            document.getElementById('aba-cozinha').classList.toggle('hidden', aba !== 'cozinha');
-            document.getElementById('aba-relatorio').classList.toggle('hidden', aba !== 'relatorio');
-            // Estilo dos botões de navegação omitido para brevidade
+        function mudar(aba) {
+            ["caixa", "cozinha", "relatorio"].forEach(id => {
+                document.getElementById(`aba-${id}`).classList.toggle('hidden', id !== aba);
+                document.getElementById(`b-${id}`).classList.toggle('aba-ativa', id === aba);
+            });
+            if(aba === 'caixa') renderPDV();
         }
 
         function renderPDV() {
-            const categorias = [...new Set(cardapio.map(i => i.c))];
-            
-            // Renderiza botões de categoria
-            document.getElementById('pdv-categorias').innerHTML = categorias.map(cat => `
-                <button onclick="filtrarPDV('${cat}')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase whitespace-nowrap border border-zinc-700 transition-all ${categoriaFiltro === cat ? 'category-btn-active' : 'bg-zinc-800'}">
-                    ${cat}
-                </button>
+            const cats = [...new Set(cardapio.map(i => i.c))];
+            document.getElementById('pdv-cats').innerHTML = cats.map(c => `
+                <button onclick="filtrar('${c}')" class="px-4 py-2 rounded-xl text-[10px] font-black uppercase border border-zinc-700 transition-all ${catAtiva === c ? 'bg-km-vinho text-km-amarelo' : 'bg-zinc-800 text-zinc-500'}">${c}</button>
             `).join('');
-
-            // Renderiza itens da categoria selecionada
-            document.getElementById('pdv-menu').innerHTML = cardapio.filter(i => i.c === categoriaFiltro).map(i => `
-                <button onclick="addItemPDV('${i.n}', ${i.p})" class="bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-left hover:border-red-600 transition-all shadow-lg">
+            document.getElementById('pdv-grid').innerHTML = cardapio.filter(i => i.c === catAtiva).map(i => `
+                <button onclick="addPDV('${i.n}', ${i.p})" class="bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-left shadow-lg hover:border-km-vinho transition-all">
                     <p class="text-xs font-bold text-white mb-2 uppercase">${i.n}</p>
-                    <p class="text-sm font-black text-red-500 italic">R$ ${i.p.toFixed(2)}</p>
+                    <p class="text-sm font-black text-green-500 italic">R$ ${i.p.toFixed(2)}</p>
                 </button>`).join('');
         }
 
-        function filtrarPDV(cat) {
-            categoriaFiltro = cat;
-            renderPDV();
+        function filtrar(c) { catAtiva = c; renderPDV(); }
+
+        function addPDV(n,p) { 
+            pdvCart.push({n,p}); pdvTotal += p; 
+            document.getElementById('pdv-list').innerHTML = pdvCart.map(i => `<div class="flex justify-between border-b border-zinc-800 pb-1 text-zinc-300"><span>• ${i.n}</span><span>R$ ${i.p.toFixed(2)}</span></div>`).join(''); 
+            document.getElementById('pdv-total').innerText = `R$ ${pdvTotal.toFixed(2)}`; 
         }
 
-        function addItemPDV(n, p) {
-            pdvCart.push({n, p}); pdvTotal += p;
-            document.getElementById('pdv-lista').innerHTML = pdvCart.map(i => `<div class="flex justify-between border-b border-zinc-800 pb-1"><span>• ${i.n}</span><span>R$ ${i.p.toFixed(2)}</span></div>`).join('');
-            document.getElementById('pdv-total').innerText = `R$ ${pdvTotal.toFixed(2)}`;
+        function enviarPDV() { 
+            const n = document.getElementById('pdv-nome').value; 
+            if(!n || pdvCart.length === 0) return alert("Preencha o cliente e escolha os produtos!"); 
+            db.ref('pedidos').push().set({ 
+                cliente: n + " (BALCÃO)", itens: pdvCart.map(i => i.n).join(', '), 
+                total: pdvTotal, status: 'novos', hora: new Date().toLocaleTimeString('pt-BR'), 
+                data: new Date().toISOString().split('T')[0] 
+            }).then(() => { 
+                pdvCart=[]; pdvTotal=0; document.getElementById('pdv-nome').value=''; 
+                document.getElementById('pdv-list').innerHTML=''; document.getElementById('pdv-total').innerText='R$ 0,00'; 
+                alert("Lançado!");
+            }); 
         }
 
-        function lancarPedidoPDV() {
-            const cliente = document.getElementById('pdv-nome').value;
-            if(!cliente || pdvCart.length === 0) return alert("Preencha cliente e produtos!");
-            const hoje = new Date().toISOString().split('T')[0];
-            db.ref('pedidos').push().set({
-                cliente: cliente + " (BALCÃO)", itens: pdvCart.map(i => i.n).join(', '),
-                total: pdvTotal, pagamento: "BALCÃO", endereco: "BALCÃO",
-                status: 'novos', hora: new Date().toLocaleTimeString('pt-BR'), data: hoje
-            }).then(() => { limparPDV(); alert("Pedido Lançado no sistema!"); });
-        }
-
-        function limparPDV() { pdvCart = []; pdvTotal = 0; document.getElementById('pdv-lista').innerHTML = ''; document.getElementById('pdv-total').innerText = 'R$ 0,00'; document.getElementById('pdv-nome').value = ''; }
-
-        // Monitoramento em tempo real (Novos, Na Chapa e Faturamento)
         db.ref('pedidos').on('value', snap => {
             const data = snap.val(); const hoje = new Date().toISOString().split('T')[0];
-            let totalDia = 0; const cols = { novos: '', preparando: '', finalizados: '' };
+            let fat = 0; const cols = { novos: '', preparando: '', finalizados: '' };
             for(let id in data) {
                 const p = data[id];
                 const card = `
-                    <div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${p.status==='novos'?'border-orange-500':'border-blue-500'} shadow-xl mb-3">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-[10px] font-black uppercase text-white tracking-widest">${p.cliente}</span>
-                            <span class="text-[8px] text-zinc-600 font-mono">${p.hora}</span>
-                        </div>
-                        <p class="text-[11px] text-zinc-400 mb-4">${p.itens}</p>
-                        <div class="flex justify-between items-center border-t border-zinc-800 pt-3">
+                    <div class="bg-zinc-900 p-4 rounded-2xl border-l-4 ${p.status==='novos'?'border-orange-500':'border-blue-500'} mb-3 shadow-xl">
+                        <div class="flex justify-between mb-2"><span class="text-[10px] font-black uppercase text-white tracking-widest">${p.cliente}</span><span class="text-[8px] text-zinc-600 font-mono">${p.hora}</span></div>
+                        <p class="text-[11px] text-zinc-400 my-2">${p.itens}</p>
+                        <div class="flex justify-between pt-2 border-t border-zinc-800">
                             <span class="text-xs font-black text-green-500 italic">R$ ${p.total.toFixed(2)}</span>
                             <div class="flex gap-2">
-                                <button onclick="imprimirPedido('${id}')" class="bg-zinc-800 p-2 rounded-lg text-xs">🖨️</button>
-                                ${p.status==='novos'?`<button onclick="update('${id}','preparando')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-black uppercase tracking-tighter">Preparar</button>`:''}
-                                ${p.status==='preparando'?`<button onclick="update('${id}','finalizados')" class="bg-green-600 px-3 py-1 rounded text-[10px] font-black uppercase tracking-tighter">Finalizar</button>`:''}
+                                <button onclick="imp('${id}')" class="bg-zinc-800 p-2 rounded text-xs">🖨️</button>
+                                ${p.status==='novos'?`<button onclick="up('${id}','preparando')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-black uppercase">Fazer</button>`:''}
+                                ${p.status==='preparando'?`<button onclick="up('${id}','finalizados')" class="bg-green-600 px-3 py-1 rounded text-[10px] font-black uppercase">Fim</button>`:''}
                             </div>
                         </div>
                     </div>`;
-                if(p.data === hoje && p.status === 'finalizados') totalDia += p.total;
+                if(p.data === hoje && p.status === 'finalizados') fat += p.total;
                 if(p.status !== 'finalizados' || p.data === hoje) cols[p.status] += card;
             }
             document.getElementById('col-novos').innerHTML = cols.novos;
             document.getElementById('col-preparando').innerHTML = cols.preparando;
             document.getElementById('col-finalizados').innerHTML = cols.finalizados;
-            document.getElementById('faturamento-total').innerText = `R$ ${totalDia.toFixed(2)}`;
+            document.getElementById('fat-hoje').innerText = `R$ ${fat.toFixed(2)}`;
         });
 
-        db.ref('pedidos').on('child_added', s => { if(s.val().status === 'novos') somAlerta.play().catch(e => {}); });
+        db.ref('pedidos').on('child_added', s => { if(s.val().status === 'novos') som.play().catch(() => {}); });
+        function up(id, st) { db.ref('pedidos/'+id).update({status: st}); }
+        function imp(id) { 
+            db.ref('pedidos/'+id).once('value', s => { 
+                const p = s.val(); 
+                document.getElementById('area-print').innerText = `KM BURGER 🍔\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\nITENS:\n${p.itens}\nTOTAL: R$ ${p.total.toFixed(2)}\n\n\n.`; 
+                window.print(); 
+            }); 
+        }
 
-        function update(id, st) { db.ref('pedidos/'+id).update({status: st}); }
-
-        function imprimirPedido(id) {
-            db.ref('pedidos/'+id).once('value', s => {
-                const p = s.val(); const txt = `KM BURGER 🍔\n----------------------------\nID: #${id.slice(-4)}\nHORA: ${p.hora}\nCLIENTE: ${p.cliente}\n----------------------------\nITENS:\n${p.itens.split(', ').join('\n')}\n----------------------------\nTOTAL: R$ ${p.total.toFixed(2)}\n\n\n\n.`;
-                document.getElementById('area-impressao').innerText = txt; window.print();
+        function gerarRel() {
+            const dataB = document.getElementById('rel-data').value;
+            if(!dataB) return alert("Selecione a data!");
+            db.ref('pedidos').once('value', s => {
+                const data = s.val(); let t = 0; let l = '';
+                for(let id in data) { 
+                    const p = data[id]; 
+                    if(p.data === dataB && p.status === 'finalizados') { 
+                        t += p.total; 
+                        l += `<div class="flex justify-between border-b border-zinc-800 py-2 text-[11px] font-mono text-zinc-400"><span>${p.hora} - ${p.cliente}</span><span>R$ ${p.total.toFixed(2)}</span></div>`; 
+                    } 
+                }
+                document.getElementById('rel-resultado').innerHTML = t > 0 ? `
+                    <div class="bg-green-500/10 p-4 rounded-xl text-green-500 font-black mb-6 border border-green-500/20 text-center">TOTAL VENDIDO: R$ ${t.toFixed(2)}</div>
+                    <div class="space-y-1">${l}</div>` : '<p class="text-zinc-600 italic text-center py-10">Nenhuma venda finalizada nesta data.</p>';
             });
         }
 
-        renderPDV(); mudarAba('caixa');
+        mudar('caixa');
     </script>
 </body>
 </html>
