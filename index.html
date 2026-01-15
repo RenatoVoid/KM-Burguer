@@ -3,39 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KM BURGER | Cardápio Digital</title>
+    <title>KM BURGER | Delivery Premium</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #121212; color: #f3f4f6; }
         .scroll-hide::-webkit-scrollbar { display: none; }
-        .glass-header { background: rgba(31, 31, 35, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #333; }
+        .glass-header { background: rgba(18, 18, 18, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid #27272a; }
         .card-item { background-color: #1e1e24; border: 1px solid #2d2d35; transition: transform 0.2s; }
         .card-item:active { transform: scale(0.98); }
         .btn-add { background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); }
         .text-gold { color: #fbbf24; }
+        
+        /* Estilo da lista de sugestões de bairro */
+        #sugestoes-bairro { max-height: 200px; overflow-y: auto; }
+        .bairro-item:hover { background-color: #e11d48; color: white; cursor: pointer; }
     </style>
 </head>
 <body class="pb-32">
 
     <div id="aviso-fechado" class="hidden fixed inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center text-center p-6 backdrop-blur-md">
-        <div class="bg-red-600/20 p-6 rounded-full mb-4 animate-pulse">
-            <span class="text-6xl">🔒</span>
-        </div>
+        <div class="bg-red-600/20 p-6 rounded-full mb-4 animate-pulse"><span class="text-6xl">🔒</span></div>
         <h2 class="text-3xl font-black text-white mb-2">LOJA FECHADA</h2>
-        <p class="text-gray-400 max-w-xs">Nosso delivery não está aceitando pedidos no momento. Volte em breve!</p>
+        <p class="text-gray-400 max-w-xs">Nosso delivery não está aceitando pedidos no momento.</p>
     </div>
 
     <header class="glass-header fixed top-0 w-full z-50 shadow-lg">
         <div class="max-w-md mx-auto px-5 py-4 flex justify-between items-center">
             <div><h1 class="text-2xl font-black italic tracking-tighter text-white">KM<span class="text-red-600">BURGER</span></h1></div>
             <div id="badge-status" class="flex items-center gap-2">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-xs font-bold text-green-500">Aberto</span>
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs font-bold text-green-500">Aberto</span>
             </div>
         </div>
         <nav class="max-w-md mx-auto flex gap-4 overflow-x-auto px-5 pb-3 scroll-hide">
@@ -62,7 +64,7 @@
     </div>
 
     <div id="modal-checkout" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-        <div class="bg-[#1e1e24] w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div class="bg-[#1e1e24] w-full max-w-sm rounded-3xl p-6 border border-gray-800 shadow-2xl overflow-y-auto max-h-[95vh]">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-black text-white">FINALIZAR</h2>
                 <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="text-gray-500 hover:text-white">✕</button>
@@ -71,7 +73,7 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Seu Nome</label>
-                    <input type="text" id="nome" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none" placeholder="Nome completo">
+                    <input type="text" id="nome" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-red-600 transition" placeholder="Nome completo">
                 </div>
                 
                 <div>
@@ -83,14 +85,15 @@
                 </div>
 
                 <div id="area-delivery" class="space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Selecione o Bairro</label>
-                        <select id="bairro-select" onchange="calcularTotalComTaxa()" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none">
-                            </select>
+                    <div class="relative">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Bairro (Digite para buscar)</label>
+                        <input type="text" id="busca-bairro" onkeyup="filtrarBairros()" onclick="filtrarBairros()" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-red-600 transition" placeholder="Ex: Centro..." autocomplete="off">
+                        <div id="sugestoes-bairro" class="hidden absolute w-full bg-[#2d2d35] border border-gray-700 rounded-xl mt-1 z-10 shadow-xl"></div>
                     </div>
+
                     <div>
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Rua e Número</label>
-                        <input type="text" id="rua-numero" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none" placeholder="Ex: Rua A, 123">
+                        <input type="text" id="rua-numero" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none" placeholder="Ex: Rua das Palmeiras, 123">
                     </div>
                 </div>
 
@@ -99,7 +102,7 @@
                     <select id="pagamento" class="w-full bg-[#121212] border border-gray-700 rounded-xl p-3 text-white outline-none">
                         <option value="Pix">💠 PIX</option>
                         <option value="Cartão">💳 Cartão</option>
-                        <option value="Dinheiro">💵 Dinheiro</option>
+                        <option value="Dinheiro">💵 Dinheiro (Troco?)</option>
                     </select>
                 </div>
 
@@ -131,53 +134,43 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // --- CONFIGURAÇÃO DE BAIRROS (EDITE AQUI RENATO!) ---
+        // --- LISTA DE BAIRROS (EDITE AQUI RENATO) ---
         const listaBairros = [
             { nome: "Centro", taxa: 0.00 },
             { nome: "Vila Nova", taxa: 5.00 },
             { nome: "Jardim das Flores", taxa: 7.00 },
             { nome: "Parque Industrial", taxa: 10.00 },
-            { nome: "Zona Rural", taxa: 15.00 }
+            { nome: "Zona Rural", taxa: 15.00 },
+            { nome: "Residencial KM", taxa: 3.00 },
+            { nome: "Bairro Alto", taxa: 6.00 }
         ];
 
         const cardapio = [
-            // Tradicionais
             { id: 't1', n: "X-Burguer", p: 19.90, c: "tradicionais" }, { id: 't2', n: "X-Salada", p: 22.90, c: "tradicionais" },
             { id: 't3', n: "X-Bacon", p: 27.90, c: "tradicionais" }, { id: 't4', n: "X-Calabresa", p: 24.90, c: "tradicionais" },
             { id: 't5', n: "X-Egg", p: 24.90, c: "tradicionais" }, { id: 't6', n: "X-Frango", p: 24.90, c: "tradicionais" },
             { id: 't7', n: "X-Tudo", p: 39.90, c: "tradicionais" },
-            // Artesanais
             { id: 'a1', n: "KM Simples", p: 29.90, c: "artesanais" }, { id: 'a2', n: "KM Salada", p: 33.90, c: "artesanais" },
             { id: 'a3', n: "KM Bacon", p: 37.90, c: "artesanais" }, { id: 'a4', n: "KM Calabresa", p: 35.90, c: "artesanais" },
             { id: 'a5', n: "KM MAX", p: 49.90, c: "artesanais" }, { id: 'a6', n: "KM Chicken", p: 29.90, c: "artesanais" },
-            // Porções
             { id: 'p1', n: "Batata P", p: 16.90, c: "porcoes" }, { id: 'p2', n: "Batata G", p: 26.90, c: "porcoes" },
             { id: 'p6', n: "Chapa Mix", p: 159.90, c: "porcoes" }, { id: 'p7', n: "Frango Empanado", p: 49.90, c: "porcoes" },
-            // Pastéis
             { id: 'pas1', n: "Pastel Carne", p: 12.90, c: "pasteis" }, { id: 'pas2', n: "Pastel Queijo", p: 12.90, c: "pasteis" },
             { id: 'pas9', n: "Pastel Nutella", p: 15.90, c: "pasteis" },
-            // Açaí e Bebidas
             { id: 'ac1', n: "Açaí 300ml", p: 10.90, c: "acai", isAcai: true }, { id: 'ac3', n: "Açaí 500ml", p: 20.90, c: "acai", isAcai: true },
             { id: 'b1', n: "Refri Lata", p: 7.90, c: "bebidas" }, { id: 'b4', n: "Água", p: 3.90, c: "bebidas" }
         ];
 
         const acaiExtras = [{ n: "Banana", p: 1.00 }, { n: "Morango", p: 3.00 }, { n: "Leite em pó", p: 1.00 }, { n: "Leite Cond.", p: 1.00 }, { n: "Paçoca", p: 2.00 }];
+        let carrinho = []; let totalProdutos = 0; let taxaEntrega = 0; let acaiAtual = null;
 
-        let carrinho = []; let totalProdutos = 0; let acaiAtual = null;
-
-        // Monitorar Status da Loja
+        // Monitor Status Loja
         db.ref('config/loja_aberta').on('value', snap => {
             const aberta = snap.val();
             const aviso = document.getElementById('aviso-fechado');
             const badge = document.getElementById('badge-status');
-            
-            if (aberta === false) { // Fechado
-                aviso.classList.remove('hidden');
-                badge.innerHTML = '<div class="w-2 h-2 bg-red-500 rounded-full"></div><span class="text-xs font-bold text-red-500">Fechado</span>';
-            } else { // Aberto (ou null/undefined)
-                aviso.classList.add('hidden');
-                badge.innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs font-bold text-green-500">Aberto</span>';
-            }
+            if(aberta === false) { aviso.classList.remove('hidden'); badge.innerHTML = '<span class="text-xs font-bold text-red-500">FECHADO</span>'; }
+            else { aviso.classList.add('hidden'); badge.innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div><span class="text-xs font-bold text-green-500">Aberto</span>'; }
         });
 
         function renderMenu() {
@@ -190,12 +183,41 @@
                         <div><h3 class="font-bold text-gray-100 text-sm">${i.n}</h3><span class="text-gold font-black">R$ ${i.p.toFixed(2)}</span></div>
                         <button onclick="${i.isAcai ? `abrirModalAcai('${i.n}',${i.p})` : `add('${i.n}',${i.p})`}" class="bg-[#2d2d35] text-white w-10 h-10 rounded-xl font-bold shadow-lg border border-gray-700 active:bg-red-600 transition">+</button>
                     </div>`).join('')}</div></section>`).join('');
-            
-            // Preencher Select de Bairros
-            const select = document.getElementById('bairro-select');
-            select.innerHTML = listaBairros.map((b, index) => `<option value="${index}">${b.nome} (+ R$ ${b.taxa.toFixed(2)})</option>`).join('');
         }
 
+        // LÓGICA DE BAIRROS INTELIGENTE
+        function filtrarBairros() {
+            const input = document.getElementById('busca-bairro');
+            const termo = input.value.toLowerCase();
+            const listaDiv = document.getElementById('sugestoes-bairro');
+            
+            listaDiv.innerHTML = '';
+            if(termo.length === 0 && document.activeElement !== input) { listaDiv.classList.add('hidden'); return; }
+
+            const filtrados = listaBairros.filter(b => b.nome.toLowerCase().includes(termo));
+            
+            if(filtrados.length > 0) {
+                filtrados.forEach(b => {
+                    const div = document.createElement('div');
+                    div.className = "bairro-item p-3 border-b border-gray-700 text-sm text-gray-300 flex justify-between";
+                    div.innerHTML = `<span>${b.nome}</span><span class="font-bold text-green-500">+ R$ ${b.taxa.toFixed(2)}</span>`;
+                    div.onclick = () => selecionarBairro(b);
+                    listaDiv.appendChild(div);
+                });
+                listaDiv.classList.remove('hidden');
+            } else {
+                listaDiv.classList.add('hidden');
+            }
+        }
+
+        function selecionarBairro(bairro) {
+            document.getElementById('busca-bairro').value = bairro.nome;
+            document.getElementById('sugestoes-bairro').classList.add('hidden');
+            taxaEntrega = bairro.taxa;
+            calcularTotalComTaxa();
+        }
+
+        // FUNÇÕES CARRINHO E PEDIDO
         function add(n, p) { carrinho.push({n, p}); atualizarCarrinho(); }
         function atualizarCarrinho() {
             totalProdutos = carrinho.reduce((sum, i) => sum + i.p, 0);
@@ -203,64 +225,45 @@
             document.getElementById('cart-count').innerText = carrinho.length;
         }
 
-        // Modal Açaí
-        function abrirModalAcai(n, p) { 
-            acaiAtual = { n, p, ad: [], total: p }; 
-            document.getElementById('acai-titulo').innerText = n; 
-            document.getElementById('lista-adicionais').innerHTML = acaiExtras.map(ex => `<label class="flex justify-between p-3 border border-gray-700 rounded-xl mb-2"><div class="flex gap-2"><input type="checkbox" onchange="toggleEx('${ex.n}',${ex.p})" class="accent-purple-500"><span>${ex.n}</span></div><span class="text-purple-400">+R$${ex.p}</span></label>`).join('');
-            document.getElementById('acai-total-modal').innerText = `R$ ${p.toFixed(2)}`;
-            document.getElementById('modal-acai').classList.remove('hidden'); 
-        }
-        function toggleEx(n, p) { 
-            const idx = acaiAtual.ad.indexOf(n);
-            if(idx>-1){ acaiAtual.ad.splice(idx,1); acaiAtual.total-=p; } else { acaiAtual.ad.push(n); acaiAtual.total+=p; }
-            document.getElementById('acai-total-modal').innerText = `R$ ${acaiAtual.total.toFixed(2)}`;
-        }
-        function confirmarAcai() { add(acaiAtual.n + (acaiAtual.ad.length ? ` (+ ${acaiAtual.ad.join(',')})` : ''), acaiAtual.total); document.getElementById('modal-acai').classList.add('hidden'); }
-
-        // Checkout com Taxa
-        function abrirCheckout() { 
-            if(carrinho.length === 0) return alert("Carrinho vazio!"); 
-            calcularTotalComTaxa();
-            document.getElementById('modal-checkout').classList.remove('hidden'); 
-        }
+        function abrirCheckout() { if(carrinho.length===0) return alert("Carrinho vazio!"); calcularTotalComTaxa(); document.getElementById('modal-checkout').classList.remove('hidden'); }
+        
         function toggleEndereco() {
             const tipo = document.getElementById('tipo-entrega').value;
-            document.getElementById('area-delivery').style.display = tipo === 'retirada' ? 'none' : 'block';
+            const area = document.getElementById('area-delivery');
+            area.style.display = tipo === 'retirada' ? 'none' : 'block';
+            taxaEntrega = tipo === 'retirada' ? 0 : taxaEntrega;
+            
+            // Se mudou para entrega e o campo está vazio, reseta taxa
+            if(tipo === 'entrega' && document.getElementById('busca-bairro').value === '') taxaEntrega = 0;
+            
             document.getElementById('linha-taxa').style.display = tipo === 'retirada' ? 'none' : 'flex';
             calcularTotalComTaxa();
         }
+
         function calcularTotalComTaxa() {
-            const tipo = document.getElementById('tipo-entrega').value;
-            let taxa = 0;
-            if (tipo === 'entrega') {
-                const idx = document.getElementById('bairro-select').value;
-                taxa = listaBairros[idx].taxa;
-            }
             document.getElementById('resumo-subtotal').innerText = `R$ ${totalProdutos.toFixed(2)}`;
-            document.getElementById('resumo-taxa').innerText = `R$ ${taxa.toFixed(2)}`;
-            document.getElementById('resumo-total').innerText = `R$ ${(totalProdutos + taxa).toFixed(2)}`;
+            document.getElementById('resumo-taxa').innerText = `R$ ${taxaEntrega.toFixed(2)}`;
+            document.getElementById('resumo-total').innerText = `R$ ${(totalProdutos + taxaEntrega).toFixed(2)}`;
         }
 
         function enviarPedido() {
             const nome = document.getElementById('nome').value;
             const tipo = document.getElementById('tipo-entrega').value;
             const pag = document.getElementById('pagamento').value;
-            
             let enderecoFinal = "RETIRADA NO BALCÃO";
-            let taxaFinal = 0;
             
-            if (tipo === 'entrega') {
-                const bairroIdx = document.getElementById('bairro-select').value;
-                const bairroNome = listaBairros[bairroIdx].nome;
+            if(tipo === 'entrega') {
+                const bairro = document.getElementById('busca-bairro').value;
                 const rua = document.getElementById('rua-numero').value;
-                taxaFinal = listaBairros[bairroIdx].taxa;
+                if(!bairro || !rua) return alert("Preencha o bairro e a rua!");
+                // Verifica se o bairro selecionado é válido para aplicar a taxa corretamente
+                const bairroValido = listaBairros.find(b => b.nome === bairro);
+                if(bairroValido) taxaEntrega = bairroValido.taxa;
                 
-                if (!rua) return alert("Digite a rua e número!");
-                enderecoFinal = `${bairroNome}, ${rua}`;
+                enderecoFinal = `${bairro}, ${rua}`;
             }
 
-            if (!nome) return alert("Digite seu nome!");
+            if(!nome) return alert("Digite seu nome!");
 
             const pedido = {
                 cliente: nome,
@@ -268,8 +271,8 @@
                 pagamento: pag,
                 itens: carrinho.map(i => i.n).join(', '),
                 subtotal: totalProdutos,
-                taxa: taxaFinal,
-                total: totalProdutos + taxaFinal,
+                taxa: taxaEntrega,
+                total: totalProdutos + taxaEntrega,
                 status: 'novos',
                 hora: new Date().toLocaleTimeString('pt-BR').slice(0,5),
                 data: new Date().toISOString().split('T')[0]
@@ -277,12 +280,23 @@
 
             const btn = document.querySelector('.btn-add');
             btn.innerHTML = "ENVIANDO..."; btn.disabled = true;
-
-            db.ref('pedidos').push().set(pedido).then(() => {
-                alert("PEDIDO ENVIADO!");
-                window.location.reload();
-            });
+            db.ref('pedidos').push().set(pedido).then(() => { alert("PEDIDO ENVIADO! 🚀"); window.location.reload(); });
         }
+
+        // AÇAÍ LOGIC (SIMPLIFICADA)
+        function abrirModalAcai(n, p) { acaiAtual = { n, p, ad: [], total: p }; document.getElementById('acai-titulo').innerText = n; document.getElementById('lista-adicionais').innerHTML = acaiExtras.map(ex => `<label class="flex justify-between p-3 border border-gray-700 rounded-xl mb-2"><div class="flex gap-2"><input type="checkbox" onchange="toggleEx('${ex.n}',${ex.p})" class="accent-purple-500"><span>${ex.n}</span></div><span class="text-purple-400">+R$${ex.p}</span></label>`).join(''); document.getElementById('acai-total-modal').innerText = `R$ ${p.toFixed(2)}`; document.getElementById('modal-acai').classList.remove('hidden'); }
+        function toggleEx(n, p) { const idx = acaiAtual.ad.indexOf(n); if(idx>-1){ acaiAtual.ad.splice(idx,1); acaiAtual.total-=p; } else { acaiAtual.ad.push(n); acaiAtual.total+=p; } document.getElementById('acai-total-modal').innerText = `R$ ${acaiAtual.total.toFixed(2)}`; }
+        function confirmarAcai() { add(acaiAtual.n + (acaiAtual.ad.length ? ` (+ ${acaiAtual.ad.join(',')})` : ''), acaiAtual.total); document.getElementById('modal-acai').classList.add('hidden'); }
+
+        // Ocultar lista se clicar fora
+        document.addEventListener('click', function(e) {
+            const input = document.getElementById('busca-bairro');
+            const lista = document.getElementById('sugestoes-bairro');
+            if (e.target !== input && e.target !== lista) {
+                lista.classList.add('hidden');
+            }
+        });
+
         renderMenu();
     </script>
 </body>
