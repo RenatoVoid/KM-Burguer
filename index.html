@@ -8,27 +8,44 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        .category-scroll::-webkit-scrollbar { display: none; }
-        html { scroll-behavior: smooth; }
+        .bg-km-vinho { background-color: #4a0404; }
+        .text-km-amarelo { color: #f59e0b; }
+        .border-km-vinho { border-color: #4a0404; }
     </style>
 </head>
-<body class="bg-zinc-50 pb-32">
+<body class="bg-gray-100 font-sans pb-32">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50 p-4">
-        <div class="flex justify-between items-center mb-4">
-            <h1 class="text-2xl font-black italic text-red-700">KM BURGER 🍔</h1>
-            <span class="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full font-bold">ABERTO</span>
-        </div>
-        <nav id="nav-cats" class="flex gap-6 overflow-x-auto category-scroll text-sm font-bold text-zinc-400 whitespace-nowrap border-b pb-2"></nav>
+    <header class="bg-km-vinho p-6 text-center text-white shadow-xl sticky top-0 z-50">
+        <h1 class="text-3xl font-black italic text-km-amarelo tracking-tighter">KM BURGER 🍔</h1>
+        <p class="text-[10px] font-bold mt-1 text-green-400 font-mono">● ABERTO AGORA</p>
     </header>
 
-    <main id="menu-container" class="max-w-md mx-auto p-4 space-y-10"></main>
+    <main class="max-w-md mx-auto p-4 space-y-8" id="menu-container">
+        </main>
 
-    <div class="fixed bottom-6 left-0 right-0 px-4 z-40">
-        <button onclick="abrirCheckout()" class="max-w-md mx-auto w-full bg-red-700 text-white flex justify-between items-center p-5 rounded-2xl shadow-2xl font-bold">
-            <div class="flex items-center gap-3"><span id="cart-count" class="bg-white text-red-700 px-2 py-0.5 rounded-lg">0</span><span>VER PEDIDO</span></div>
-            <span id="cart-total">R$ 0,00</span>
-        </button>
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-2xl max-w-md mx-auto z-40">
+        <div class="flex justify-between items-center mb-2 px-2 font-bold">
+            <span class="text-gray-500">Total:</span>
+            <span id="cart-total" class="text-2xl text-green-600">R$ 0,00</span>
+        </div>
+        <button onclick="abrirCheckout()" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg text-lg active:scale-95 transition">FINALIZAR PEDIDO</button>
+    </div>
+
+    <div id="modal-checkout" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl text-gray-800">
+            <h2 class="text-xl font-bold mb-4 text-km-vinho text-center uppercase">Dados do Pedido</h2>
+            <div class="space-y-3">
+                <input type="text" id="nome" placeholder="Seu Nome" class="w-full p-4 border rounded-xl outline-none focus:border-km-vinho">
+                <select id="tipo-entrega" onchange="toggleEndereco()" class="w-full p-4 border rounded-xl outline-none bg-white">
+                    <option value="entrega">Entrega (Delivery)</option>
+                    <option value="retirada">Retirada na Loja</option>
+                </select>
+                <input type="text" id="endereco" placeholder="Endereço, Número e Bairro" class="w-full p-4 border rounded-xl outline-none">
+                <input type="text" id="pagamento" placeholder="Forma de Pagamento (Pix, Cartão...)" class="w-full p-4 border rounded-xl outline-none">
+            </div>
+            <button onclick="enviarPedidoFirebase()" class="w-full bg-green-600 text-white py-5 rounded-2xl font-bold text-lg mt-6 shadow-xl active:scale-95 transition uppercase">Enviar para Cozinha</button>
+            <button onclick="document.getElementById('modal-checkout').classList.add('hidden')" class="w-full mt-4 text-gray-400 font-semibold">Voltar ao Cardápio</button>
+        </div>
     </div>
 
     <script>
@@ -41,40 +58,77 @@
         const db = firebase.database();
 
         const cardapio = [
-            { n: "X-Burguer", p: 19.90, c: "TRADICIONAIS" }, { n: "X-Salada", p: 22.90, c: "TRADICIONAIS" },
-            { n: "X-Bacon", p: 27.90, c: "TRADICIONAIS" }, { n: "X-Calabresa", p: 24.90, c: "TRADICIONAIS" },
-            { n: "X-Egg", p: 24.90, c: "TRADICIONAIS" }, { n: "X-Frango", p: 24.90, c: "TRADICIONAIS" },
-            { n: "X-Tudo", p: 39.90, c: "TRADICIONAIS" },
-            { n: "KM-Burger Simples", p: 29.90, c: "ARTESANAIS" }, { n: "KM-Burger Salada", p: 33.90, c: "ARTESANAIS" },
-            { n: "KM-Burger Bacon", p: 37.90, c: "ARTESANAIS" }, { n: "KM-Burger Calabresa", p: 35.90, c: "ARTESANAIS" },
-            { n: "KM-Burger MAX", p: 49.90, c: "ARTESANAIS" }, { n: "KM-Chicken", p: 29.90, c: "ARTESANAIS" },
-            { n: "Batata P", p: 16.90, c: "PORÇÕES" }, { n: "Batata G", p: 26.90, c: "PORÇÕES" },
-            { n: "Batata Queijo/Bacon G", p: 43.90, c: "PORÇÕES" }, { n: "Calabresa c/ Fritas", p: 39.90, c: "PORÇÕES" },
-            { n: "Contra Filé Grelhado", p: 59.90, c: "PORÇÕES" }, { n: "Chapa Mix", p: 159.90, c: "PORÇÕES" },
-            { n: "Pastel Carne", p: 12.90, c: "PASTÉIS" }, { n: "Pastel Queijo", p: 12.90, c: "PASTÉIS" },
-            { n: "Pastel Nutella", p: 15.90, c: "PASTÉIS" },
-            { n: "Refri Lata", p: 7.90, c: "BEBIDAS" }, { n: "Água", p: 3.90, c: "BEBIDAS" }
+            { n: "X-Burguer", p: 19.90, c: "🍔 HAMBÚRGUER" }, { n: "X-Salada", p: 22.90, c: "🍔 HAMBÚRGUER" },
+            { n: "X-Bacon", p: 27.90, c: "🍔 HAMBÚRGUER" }, { n: "X-Calabresa", p: 24.90, c: "🍔 HAMBÚRGUER" },
+            { n: "X-Egg", p: 24.90, c: "🍔 HAMBÚRGUER" }, { n: "X-Frango", p: 24.90, c: "🍔 HAMBÚRGUER" },
+            { n: "X-Tudo", p: 39.90, c: "🍔 HAMBÚRGUER" },
+            { n: "KM-Simples", p: 29.90, c: "🔥 ARTESANAL" }, { n: "KM-Salada", p: 33.90, c: "🔥 ARTESANAL" },
+            { n: "KM-Bacon", p: 37.90, c: "🔥 ARTESANAL" }, { n: "KM-MAX", p: 49.90, c: "🔥 ARTESANAL" },
+            { n: "KM-Chicken", p: 29.90, c: "🔥 ARTESANAL" },
+            { n: "Batata P", p: 16.90, c: "🍟 PORÇÕES" }, { n: "Batata G", p: 26.90, c: "🍟 PORÇÕES" },
+            { n: "Frango Empanado", p: 49.90, c: "🍟 PORÇÕES" }, { n: "Pastel Carne", p: 12.90, c: "🥟 PASTÉIS" },
+            { n: "Açaí 300ml", p: 10.90, c: "🍧 AÇAÍ" }, { n: "Açaí 500ml", p: 20.90, c: "🍧 AÇAÍ" },
+            { n: "Refri Lata", p: 7.90, c: "🥤 BEBIDAS" }, { n: "Água", p: 3.90, c: "🥤 BEBIDAS" }
         ];
 
-        let cart = []; let total = 0;
+        let carrinho = []; let total = 0;
 
         function render() {
+            const container = document.getElementById('menu-container');
             const cats = [...new Set(cardapio.map(i => i.c))];
-            document.getElementById('nav-cats').innerHTML = cats.map(c => `<a href="#${c}">${c}</a>`).join('');
-            document.getElementById('menu-container').innerHTML = cats.map(cat => `
-                <section id="${cat}">
-                    <h2 class="text-xs font-black text-zinc-400 uppercase mb-4 tracking-widest">${cat}</h2>
+            container.innerHTML = cats.map(cat => `
+                <section>
+                    <h2 class="font-black text-lg text-km-vinho mb-3 border-l-4 border-km-vinho pl-2 uppercase">${cat}</h2>
                     <div class="grid gap-3">
                         ${cardapio.filter(i => i.c === cat).map(i => `
-                            <div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm">
-                                <div><p class="font-bold text-zinc-800">${i.n}</p><p class="text-green-600 font-bold">R$ ${i.p.toFixed(2)}</p></div>
-                                <button onclick="add('${i.n}', ${i.p})" class="bg-zinc-100 text-red-700 w-10 h-10 rounded-xl font-bold">+</button>
+                            <div class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center">
+                                <div><p class="font-bold text-gray-800 uppercase text-sm">${i.n}</p><p class="text-green-600 font-black">R$ ${i.p.toFixed(2)}</p></div>
+                                <button onclick="add('${i.n}', ${i.p})" class="bg-km-vinho text-white w-10 h-10 rounded-full font-bold shadow-lg active:scale-95">+</button>
                             </div>`).join('')}
                     </div>
                 </section>`).join('');
         }
-        function add(n,p){ cart.push({n,p}); total += p; document.getElementById('cart-total').innerText=`R$ ${total.toFixed(2)}`; document.getElementById('cart-count').innerText=cart.length; }
-        // Outras funções de Checkout devem ser mantidas aqui...
+
+        function add(n, p) {
+            carrinho.push({n, p});
+            total += p;
+            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2)}`;
+        }
+
+        function abrirCheckout() {
+            if (carrinho.length === 0) return alert("Seu carrinho está vazio!");
+            document.getElementById('modal-checkout').classList.remove('hidden');
+        }
+
+        function toggleEndereco() {
+            const tipo = document.getElementById('tipo-entrega').value;
+            document.getElementById('endereco').classList.toggle('hidden', tipo === 'retirada');
+        }
+
+        function enviarPedidoFirebase() {
+            const nome = document.getElementById('nome').value;
+            const end = document.getElementById('endereco').value;
+            const pag = document.getElementById('pagamento').value;
+            const tipo = document.getElementById('tipo-entrega').value;
+
+            if (!nome || !pag) return alert("Por favor, preencha nome e forma de pagamento!");
+
+            const hoje = new Date().toISOString().split('T')[0];
+            db.ref('pedidos').push().set({
+                cliente: nome,
+                endereco: tipo === 'entrega' ? end : 'RETIRADA NA LOJA',
+                itens: carrinho.map(i => i.n).join(', '),
+                total: total,
+                pagamento: pag,
+                status: 'novos',
+                hora: new Date().toLocaleTimeString('pt-BR'),
+                data: hoje
+            }).then(() => {
+                alert("PEDIDO ENVIADO COM SUCESSO!");
+                window.location.reload();
+            }).catch(e => alert("Erro ao enviar: " + e.message));
+        }
+
         render();
     </script>
 </body>
